@@ -20,6 +20,23 @@ Salidas:
 - `sommerfeld_resultados.png`: figura resumen 2×3.
 - `figuras/*.png`: cada gráfica por separado, lista para las diapositivas.
 
+## Animaciones para la presentación
+
+```bash
+python animaciones.py                    # genera los 4 GIF en animaciones/
+python animaciones.py --solo newton cv   # solo algunos
+python animaciones.py --mp4              # además MP4 (requiere ffmpeg)
+```
+
+| Archivo | Diapositiva | Qué muestra |
+|---|---|---|
+| `1_fermi_dirac.gif` | 4 (Sebastián) | El escalón de Fermi-Dirac se suaviza al subir T; electrones excitados y huecos alrededor de E_F. |
+| `2_newton.gif` | 7 (Joan) | Tangentes de Newton-Raphson sobre F(μ) = N − 1 y convergencia cuadrática de \|N − 1\|. |
+| `3_cuadratura.gif` | 9 (Joan) | Subintervalos que elige `quad` al bajar T y comparación con Simpson de paso fijo. |
+| `4_derivada_cv.gif` | 11–12 (Jorge) | La pendiente de ΔU(T) dibuja punto a punto la curva C_V(T) frente a Sommerfeld. |
+
+Los GIF se insertan en Google Slides o PowerPoint con *Insertar > Imagen* y se reproducen en bucle.
+
 ## Qué hace cada parte (requisitos del proyecto)
 
 | Requisito | Implementación |

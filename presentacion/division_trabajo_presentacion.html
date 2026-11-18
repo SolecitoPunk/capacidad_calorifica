@@ -157,6 +157,15 @@ integrando la densidad de estados g(E) con la distribución de Fermi-Dirac f(E,T
   <tr><td>16</td><td>Cierre y preguntas</td><td class="S">Sebastián</td><td>19:30–20:00</td><td>0:30</td></tr>
 </table>
 
+<h3>Animaciones (archivo <code>animaciones.py</code>)</h3>
+<p>Generar con <code>python animaciones.py</code>; los GIF quedan en <code>animaciones/</code> y se insertan con <i>Insertar &gt; Imagen</i>. Se reproducen en bucle, así que el orador puede hablar sobre ellos sin hacer clic.</p>
+<table>
+  <tr><th>Archivo</th><th>Diapositiva</th><th>Responsable</th><th>Qué muestra</th></tr>
+  <tr><td><code>1_fermi_dirac.gif</code></td><td>4</td><td class="S">Sebastián</td><td>El escalón se suaviza al subir T; aparecen electrones excitados sobre E<sub>F</sub> y huecos debajo, en una franja de ancho ~k<sub>B</sub>T.</td></tr>
+  <tr><td><code>2_newton.gif</code></td><td>7</td><td class="J">Joan</td><td>Tangentes de Newton sobre F(μ) = N − 1 desde μ<sub>0</sub> = 0.35 (t = 0.3) y caída de |N − 1| hasta la precisión de máquina.</td></tr>
+  <tr><td><code>3_cuadratura.gif</code></td><td>9</td><td class="J">Joan</td><td>Subintervalos que elige <code>quad</code>: al bajar T se concentran alrededor de μ. Incluye el error de Simpson con el mismo número de evaluaciones.</td></tr>
+  <tr><td><code>4_derivada_cv.gif</code></td><td>11–12</td><td class="G">Jorge</td><td>Una tangente recorre ΔU(T) y su pendiente va dibujando C<sub>V</sub>(T) junto a la recta de Sommerfeld y el límite clásico.</td></tr>
+</table>
 <h2 class="salto">5. Guion con diálogos</h2>
 <p class="peq">El guion está escrito para unas 130 palabras por minuto. No hay que memorizarlo palabra por palabra: sirve de base para practicar. Los textos en cursiva son indicaciones, no se leen.</p>
 
@@ -181,9 +190,9 @@ integrando la densidad de estados g(E) con la distribución de Fermi-Dirac f(E,T
 </div></div>
 
 <div class="slide"><div class="cab">Diapositiva 4 · Modelo físico · <span class="S">Sebastián</span> · 3:00–4:45</div>
-<div class="cont">Gráficas 1 (g(ε)) y 2 (Fermi-Dirac a varias T). Ecuaciones: g(E) ~ E<sup>1/2</sup>, f(E) = 1/(e<sup>(E−μ)/k<sub>B</sub>T</sup> + 1).</div>
+<div class="cont">Gráficas 1 (g(ε)) y 2 (Fermi-Dirac a varias T). <b>Animación 1_fermi_dirac.gif.</b> Ecuaciones: g(E) ~ E<sup>1/2</sup>, f(E) = 1/(e<sup>(E−μ)/k<sub>B</sub>T</sup> + 1).</div>
 <div class="dlg">
-<p><span class="S">Sebastián:</span> El modelo tiene dos ingredientes. El primero es la densidad de estados de un gas de electrones libres en tres dimensiones, que crece como la raíz cuadrada de la energía. Aquí la vemos: a temperatura cero todos los estados están llenos hasta la energía de Fermi, que es la zona sombreada.</p>
+<p><span class="S">Sebastián:</span> El modelo tiene dos ingredientes. El primero es la densidad de estados de un gas de electrones libres en tres dimensiones, que crece como la raíz cuadrada de la energía. Aquí la vemos en la animación: a temperatura cero todos los estados están llenos hasta la energía de Fermi, que es la zona sombreada.</p>
 <p>El segundo ingrediente es la distribución de Fermi-Dirac, que da la probabilidad de que un estado de energía E esté ocupado. A temperatura cero es un escalón perfecto. Al subir la temperatura, el escalón se suaviza en una franja de ancho k<sub>B</sub>T alrededor del potencial químico μ. <i>(Señalar la gráfica 2.)</i> Fíjense en que μ depende de la temperatura: no podemos dejarlo fijo, porque el número de electrones tiene que conservarse. Ese es el primer problema numérico, y Joan lo va a explicar.</p>
 <p>Con estos dos ingredientes, el número de electrones es la integral de g por f, y la energía interna es la integral de E por g por f.</p>
 </div></div>
@@ -203,7 +212,7 @@ integrando la densidad de estados g(E) con la distribución de Fermi-Dirac f(E,T
 </div></div>
 
 <div class="slide"><div class="cab">Diapositiva 7 · Ecuación de ligadura · <span class="J">Joan</span> · 7:30–9:15</div>
-<div class="cont">F(μ) = <span style="font-style:italic;font-size:1.2em">ʃ</span> g f dε − 1 = 0; μ<sub>k+1</sub> = μ<sub>k</sub> − F/F′, con F′ = <span style="font-style:italic;font-size:1.2em">ʃ</span> g(−df/dε) dε &gt; 0; intervalo [a, b] y bisección de respaldo.</div>
+<div class="cont">F(μ) = <span style="font-style:italic;font-size:1.2em">ʃ</span> g f dε − 1 = 0; μ<sub>k+1</sub> = μ<sub>k</sub> − F/F′, con F′ = <span style="font-style:italic;font-size:1.2em">ʃ</span> g(−df/dε) dε &gt; 0; intervalo [a, b] y bisección de respaldo. <b>Animación 2_newton.gif.</b></div>
 <div class="dlg">
 <p><span class="J">Joan:</span> La ecuación de ligadura dice que la integral de g por f tiene que dar uno para cualquier temperatura. La incógnita es μ, y la escribimos como un problema de raíces: F(μ) = N(μ) − 1 = 0.</p>
 <p>Implementamos el método de Newton-Raphson. La ventaja es que la derivada de F también se calcula con una integral: es g multiplicada por menos la derivada de Fermi-Dirac, que es un pico centrado en μ. Esa derivada siempre es positiva, así que N crece con μ y la raíz es única.</p>
@@ -218,10 +227,10 @@ integrando la densidad de estados g(E) con la distribución de Fermi-Dirac f(E,T
 </div></div>
 
 <div class="slide"><div class="cab">Diapositiva 9 · Integración adaptativa · <span class="J">Joan</span> · 10:30–12:00</div>
-<div class="cont">U = <span style="font-style:italic;font-size:1.2em">ʃ</span><sub>0</sub><sup>E<sub>max</sub></sup> ε g f dε, Gauss-Kronrod adaptativo (QUADPACK), E<sub>max</sub> = μ + 40t, punto de ruptura en μ. Tabla de sensibilidad.</div>
+<div class="cont">U = <span style="font-style:italic;font-size:1.2em">ʃ</span><sub>0</sub><sup>E<sub>max</sub></sup> ε g f dε, Gauss-Kronrod adaptativo (QUADPACK), E<sub>max</sub> = μ + 40t, punto de ruptura en μ. Tabla de sensibilidad. <b>Animación 3_cuadratura.gif.</b></div>
 <div class="dlg">
 <p><span class="J">Joan:</span> Con μ conocido, calculamos la energía interna. El reto es que, a baja temperatura, Fermi-Dirac cambia de uno a cero en una franja muy angosta. Si usáramos una regla de paso fijo, como Simpson, necesitaríamos muchísimos puntos.</p>
-<p>Por eso usamos cuadratura adaptativa de Gauss-Kronrod, de la librería QUADPACK que viene en SciPy. El método estima el error en cada subintervalo y solo divide donde hace falta. Le indicamos que hay un punto delicado en E = μ para que refine ahí, y le pedimos tolerancia relativa de 10⁻¹³.</p>
+<p>Por eso usamos cuadratura adaptativa de Gauss-Kronrod, de la librería QUADPACK que viene en SciPy. El método estima el error en cada subintervalo y solo divide donde hace falta. En la animación se ve: al bajar la temperatura, las líneas rojas, que son los bordes de los subintervalos, se amontonan alrededor de μ, y con el mismo número de evaluaciones Simpson comete un error mucho mayor. Le indicamos que hay un punto delicado en E = μ para que refine ahí, y le pedimos tolerancia relativa de 10⁻¹³.</p>
 <p>La integral va en principio hasta infinito, pero la cola de Fermi-Dirac decae como e<sup>−(E−μ)/k<sub>B</sub>T</sup>. Cortamos en μ más 40 k<sub>B</sub>T, donde la cola vale unos 10⁻¹⁸. Comprobamos que si movemos el corte a 30 o a 60 k<sub>B</sub>T la energía cambia menos de 10⁻¹³.</p>
 </div></div>
 
@@ -232,7 +241,7 @@ integrando la densidad de estados g(E) con la distribución de Fermi-Dirac f(E,T
 </div></div>
 
 <div class="slide"><div class="cab">Diapositiva 11 · Diferenciación numérica · <span class="G">Jorge</span> · 13:00–14:15</div>
-<div class="cont">C<sub>V</sub> ~ [U(T+h) − U(T−h)]/(2h), error O(h²); extremos con fórmula de segundo orden.</div>
+<div class="cont">C<sub>V</sub> ~ [U(T+h) − U(T−h)]/(2h), error O(h²); extremos con fórmula de segundo orden. <b>Animación 4_derivada_cv.gif</b> (se deja corriendo durante las diapositivas 11 y 12).</div>
 <div class="dlg">
 <p><span class="G">Jorge:</span> Gracias, Joan. La capacidad calorífica es la derivada de la energía interna respecto a la temperatura. Como tenemos U en una rejilla, usamos diferencias centrales: U en T más h, menos U en T menos h, dividido entre 2h. El error de esta fórmula es proporcional a h al cuadrado. En los extremos de la rejilla no hay vecino a ambos lados, así que usamos una fórmula de un solo lado, también de segundo orden.</p>
 <p>Un punto importante: derivar amplifica el ruido. Un error de 10⁻⁶ en U, que parece pequeño, al dividir entre 2h = 0.005 se convierte en un error de casi 0.5 % en C<sub>V</sub> a la temperatura más baja. Por eso fue necesaria la alta precisión de la integración que explicó Joan.</p>
