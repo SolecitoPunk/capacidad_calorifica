@@ -198,6 +198,7 @@ def anim_newton(mp4=False, t=0.3, mu0=0.35):
     dinamicos = []
 
     def dibujar(j):
+        nonlocal dinamicos       # "+=" en una lista dentro de la función la vuelve local
         for obj in dinamicos:
             obj.remove()
         dinamicos.clear()
