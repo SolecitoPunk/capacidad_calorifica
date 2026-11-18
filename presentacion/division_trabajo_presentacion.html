@@ -77,7 +77,7 @@ integrando la densidad de estados g(E) con la distribución de Fermi-Dirac f(E,T
 
 <h3>Cambios hechos al código original</h3>
 <ul>
-  <li><b>Algoritmo iterativo propio para μ(T).</b> Antes solo se llamaba a <code>brentq</code>. Ahora hay un Newton-Raphson con bisección de respaldo que converge en 3 o 4 iteraciones, con continuación (la semilla es el μ de la temperatura anterior). Brent queda como verificación: ambos coinciden a ~10⁻¹⁵.</li>
+  <li><b>Algoritmo iterativo propio para μ(T).</b> Antes solo se llamaba a <code>brentq</code>. Ahora hay un Newton-Raphson con bisección de respaldo que converge en 3 o 4 iteraciones, con continuación (la semilla es el μ de la temperatura anterior). Brent queda como verificación: ambos coinciden a ~10⁻¹⁴.</li>
   <li><b>Extracción de γ sin sesgo.</b> El ajuste C<sub>V</sub> = γT sobre t <u>&lt;</u> 0.05 daba γ = 4.9117 (−0.47 %), porque ignora la corrección cúbica de Sommerfeld. Con C<sub>V</sub> = γT + δT³ se obtiene γ = 4.93493 frente a π²/2 = 4.93480 (error 0.003 %). Además se excluyen los extremos de la rejilla, donde la derivada es de un solo lado.</li>
   <li><b>Más validaciones:</b> sensibilidad a la tolerancia de <code>quad</code>, curva de Sommerfeld de segundo orden (con el término t³), convergencia de γ con el paso h y valor de U para t <svg width="13" height="9" viewBox="0 0 13 9" style="vertical-align:middle"><path d="M0 4.5h11M8 1.5l3 3-3 3" stroke="currentColor" fill="none" stroke-width="1.3"/></svg> 0.</li>
   <li><b>Aplicación física al cobre:</b> γ en mJ/(mol K²), comparación con el valor experimental y estimación de la masa efectiva m*/m.</li>
@@ -207,14 +207,14 @@ integrando la densidad de estados g(E) con la distribución de Fermi-Dirac f(E,T
 <div class="dlg">
 <p><span class="J">Joan:</span> La ecuación de ligadura dice que la integral de g por f tiene que dar uno para cualquier temperatura. La incógnita es μ, y la escribimos como un problema de raíces: F(μ) = N(μ) − 1 = 0.</p>
 <p>Implementamos el método de Newton-Raphson. La ventaja es que la derivada de F también se calcula con una integral: es g multiplicada por menos la derivada de Fermi-Dirac, que es un pico centrado en μ. Esa derivada siempre es positiva, así que N crece con μ y la raíz es única.</p>
-<p>Para que el método no falle, le pusimos una salvaguarda. Mantenemos un intervalo que siempre contiene la raíz, y si un paso de Newton se sale de él, hacemos un paso de bisección. Además usamos continuación: el μ de una temperatura es la semilla de la siguiente. Con eso el método converge en tres o cuatro iteraciones por temperatura. Para verificar, comparamos con el método de Brent de SciPy, y la diferencia es del orden de 10⁻¹⁵.</p>
+<p>Para que el método no falle, le pusimos una salvaguarda. Mantenemos un intervalo que siempre contiene la raíz, y si un paso de Newton se sale de él, hacemos un paso de bisección. Además usamos continuación: el μ de una temperatura es la semilla de la siguiente. Con eso el método converge en tres o cuatro iteraciones por temperatura. Para verificar, comparamos con el método de Brent de SciPy, y la diferencia máxima es de 1.4×10⁻¹⁴.</p>
 </div></div>
 
 <div class="slide"><div class="cab">Diapositiva 8 · Resultado μ(T) · <span class="J">Joan</span> · 9:15–10:30</div>
-<div class="cont">Gráfica 3: μ(T) numérico frente a 1 − (π²/12)t². Dato: max|N − 1| ~ 10⁻¹⁵.</div>
+<div class="cont">Gráfica 3: μ(T) numérico frente a 1 − (π²/12)t². Dato: max|N − 1| = 9.8×10⁻¹⁵.</div>
 <div class="dlg">
 <p><span class="J">Joan:</span> Este es el resultado. La curva azul es nuestro μ numérico y la roja punteada es la predicción de Sommerfeld. A bajas temperaturas coinciden; por ejemplo, en t = 0.01 obtenemos 0.99991774 y la fórmula da 0.99991775: coinciden hasta la séptima cifra decimal. Al subir la temperatura las curvas se separan, porque la fórmula es solo el primer término de una serie. En t = 1 el potencial químico ya es ligeramente negativo, −0.021, que es el comportamiento de un gas clásico.</p>
-<p>Lo más importante es que el número de electrones se conserva: la desviación máxima de N respecto a uno, en toda la rejilla, es del orden de 10⁻¹⁵, que es la precisión de la máquina.</p>
+<p>Lo más importante es que el número de electrones se conserva: la desviación máxima de N respecto a uno, en toda la rejilla, es de 10⁻¹⁴, prácticamente la precisión de la máquina.</p>
 </div></div>
 
 <div class="slide"><div class="cab">Diapositiva 9 · Integración adaptativa · <span class="J">Joan</span> · 10:30–12:00</div>
@@ -226,9 +226,9 @@ integrando la densidad de estados g(E) con la distribución de Fermi-Dirac f(E,T
 </div></div>
 
 <div class="slide"><div class="cab">Diapositiva 10 · Energía térmica · <span class="J">Joan</span> · 12:00–13:00</div>
-<div class="cont">Gráfica 4: ΔU numérico frente a (π²/4)t². Ajuste a t²: coeficiente ~ π²/4 = 2.467.</div>
+<div class="cont">Gráfica 4: ΔU numérico frente a (π²/4)t². Ajuste a t² (t <u>&lt;</u> 0.05): a = 2.461 frente a π²/4 = 2.467.</div>
 <div class="dlg">
-<p><span class="J">Joan:</span> Aquí está la energía térmica, es decir, la energía interna menos su valor a temperatura cero, tres quintos. Crece como t al cuadrado, como predice Sommerfeld. Al ajustar a baja temperatura obtenemos un coeficiente muy cercano a pi cuadrado sobre cuatro, 2.467, y la pequeña diferencia viene de la corrección de orden t⁴. Con esta curva ya tenemos todo lo necesario para la capacidad calorífica. Jorge, sigue tú.</p>
+<p><span class="J">Joan:</span> Aquí está la energía térmica, es decir, la energía interna menos su valor a temperatura cero, tres quintos. Crece como t al cuadrado, como predice Sommerfeld. Al ajustar a baja temperatura obtenemos un coeficiente de 2.461, frente a pi cuadrado sobre cuatro, 2.467. La diferencia de 0.3 % viene de la corrección de orden t⁴, que el ajuste a una parábola pura no incluye; es el mismo efecto que Jorge va a corregir en el ajuste de γ. Con esta curva ya tenemos todo lo necesario para la capacidad calorífica. Jorge, sigue tú.</p>
 </div></div>
 
 <div class="slide"><div class="cab">Diapositiva 11 · Diferenciación numérica · <span class="G">Jorge</span> · 13:00–14:15</div>
@@ -242,7 +242,7 @@ integrando la densidad de estados g(E) con la distribución de Fermi-Dirac f(E,T
 <div class="cont">Gráficas 5 y 6. Razón C<sub>V</sub>/C<sub>V</sub><sup>Somm</sup>: 0.967 (t = 0.1), 0.714 (t = 0.3), 0.512 (t = 0.5); C<sub>V</sub> <svg width="13" height="9" viewBox="0 0 13 9" style="vertical-align:middle"><path d="M0 4.5h11M8 1.5l3 3-3 3" stroke="currentColor" fill="none" stroke-width="1.3"/></svg> 3/2 en t ~ 1.</div>
 <div class="dlg">
 <p><span class="G">Jorge:</span> Este es el resultado principal. La curva azul es la capacidad calorífica numérica y la roja es la recta de Sommerfeld. A bajas temperaturas son prácticamente iguales: el comportamiento es lineal.</p>
-<p>A la derecha está el cociente entre las dos. En t = 0.1 la simulación da el 96.7 % del valor lineal; en t = 0.3, el 71 %; y en t = 0.5, el 51 %. Esto muestra hasta dónde vale la aproximación lineal. Si agregamos el siguiente término de la expansión, menos 3π⁴/20 por t al cubo, la curva magenta, el acuerdo se extiende un poco más.</p>
+<p>A la derecha está el cociente entre las dos. En t = 0.1 la simulación da el 96.7 % del valor lineal; en t = 0.3, el 71 %; y en t = 0.5, el 51 %. Esto muestra hasta dónde vale la aproximación lineal. Si agregamos el siguiente término de la expansión, menos 3π⁴/20 por t al cubo, la curva magenta, el acuerdo se extiende hasta t ~ 0.2. Más allá, esa curva se dobla hacia abajo y se vuelve negativa cerca de t = 0.6: la expansión de Sommerfeld es una serie en potencias de t y solo sirve a baja temperatura. El cálculo numérico no tiene esa limitación.</p>
 <p>A temperaturas del orden de la temperatura de Fermi, la capacidad calorífica se acerca al valor clásico de tres medios. Es decir, el mismo programa reproduce los dos límites: el cuántico a baja temperatura y el clásico a alta temperatura.</p>
 </div></div>
 
@@ -277,12 +277,12 @@ integrando la densidad de estados g(E) con la distribución de Fermi-Dirac f(E,T
 <p class="peq">Valores de referencia que debe reproducir <code>python sommerfeld_cv.py</code>. Si alguno de ustedes obtiene números distintos en las primeras cifras, avise al grupo.</p>
 <table>
   <tr><th>Magnitud</th><th>Valor numérico</th><th>Referencia teórica</th></tr>
-  <tr><td>max|N − 1| en la rejilla</td><td>~10⁻¹⁵</td><td>0</td></tr>
-  <tr><td>Iteraciones de Newton por temperatura</td><td>3–4 (media 3.65)</td><td>—</td></tr>
+  <tr><td>max|N − 1| en la rejilla</td><td>9.8×10⁻¹⁵</td><td>0</td></tr>
+  <tr><td>Iteraciones de Newton por temperatura</td><td>3–4 (media 3.17)</td><td>—</td></tr>
   <tr><td>μ/E<sub>F</sub> en t = 0.01</td><td>0.99991774</td><td>1 − (π²/12)t² = 0.99991775</td></tr>
   <tr><td>μ/E<sub>F</sub> en t = 0.5 y t = 1.0</td><td>0.7431 y −0.0215</td><td>(fuera del régimen lineal)</td></tr>
   <tr><td>γ con ajuste C<sub>V</sub> = γt</td><td>4.9117 (−0.47 %)</td><td>π²/2 = 4.934802</td></tr>
-  <tr><td>γ con ajuste C<sub>V</sub> = γt + δt³</td><td>4.934927 (+0.003 %)</td><td>π²/2 = 4.934802</td></tr>
+  <tr><td>γ con ajuste C<sub>V</sub> = γt + δt³</td><td>4.934927 (+0.0025 %)</td><td>π²/2 = 4.934802</td></tr>
   <tr><td>δ (coeficiente de t³)</td><td>−14.98</td><td>−3π⁴/20 = −14.61</td></tr>
   <tr><td>γ con 50 / 100 / 200 / 400 puntos</td><td>4.93362 / 4.93468 / 4.93493 / 4.93498</td><td>4.934802</td></tr>
   <tr><td>C<sub>V</sub>/C<sub>V</sub><sup>Somm</sup> en t = 0.1 / 0.3 / 0.5 / 1.0</td><td>0.967 / 0.714 / 0.512 / 0.285</td><td>1 en el régimen lineal</td></tr>
