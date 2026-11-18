@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Capacidad calorífica electrónica – División del trabajo y guion</title>
+<style>
+  @page { size: A4; margin: 18mm 16mm 18mm 16mm; }
+  body { font-family: "DejaVu Serif", Georgia, serif; font-size: 10.6pt; line-height: 1.42; color: #1d1d1d; }
+  h1, h2, h3 { font-family: "DejaVu Sans", Arial, sans-serif; color: #1f3b6e; }
+  h1 { font-size: 21pt; margin: 0 0 4px; }
+  h2 { font-size: 14.5pt; border-bottom: 2px solid #1f3b6e; padding-bottom: 3px; margin-top: 22px; }
+  h3 { font-size: 11.5pt; margin: 14px 0 4px; }
+  .portada { text-align: center; padding-top: 70px; }
+  .portada .sub { font-size: 13pt; color: #444; margin-bottom: 40px; }
+  .portada .nombres { font-size: 13pt; line-height: 1.9; }
+  .caja { border: 1px solid #c9d3e6; background: #f4f7fc; border-radius: 6px; padding: 9px 12px; margin: 10px 0; }
+  table { border-collapse: collapse; width: 100%; margin: 8px 0; font-size: 9.6pt; }
+  th, td { border: 1px solid #b9c3d6; padding: 4px 6px; vertical-align: top; }
+  th { background: #1f3b6e; color: white; font-family: "DejaVu Sans", Arial, sans-serif; font-weight: normal; }
+  tr:nth-child(even) td { background: #f6f8fb; }
+  .S { color: #0b6e4f; font-weight: bold; }
+  .J { color: #a33b00; font-weight: bold; }
+  .G { color: #5b2a86; font-weight: bold; }
+  .slide { page-break-inside: avoid; border-left: 4px solid #1f3b6e; padding: 2px 0 2px 10px; margin: 12px 0; }
+  .slide .cab { font-family: "DejaVu Sans", Arial, sans-serif; font-size: 10pt; color: #1f3b6e; font-weight: bold; }
+  .slide .cont { font-size: 9.4pt; color: #555; margin: 2px 0 4px; }
+  .dlg p { margin: 3px 0; }
+  .salto { page-break-before: always; }
+  .peq { font-size: 9pt; color: #555; }
+  ul { margin: 4px 0 4px 18px; padding: 0; }
+  li { margin: 2px 0; }
+  .barra { display: flex; height: 26px; border-radius: 4px; overflow: hidden; font-family: "DejaVu Sans", Arial, sans-serif; font-size: 8.5pt; color: white; margin: 8px 0 2px; }
+  .barra div { display: flex; align-items: center; justify-content: center; }
+</style>
+</head>
+<body>
+
+<div class="portada">
+  <h1>Capacidad Calorífica Electrónica a T Finita</h1>
+  <div class="sub">Modelo de Sommerfeld · Proyecto de simulación en física computacional<br>
+  Propuesta de división del trabajo, plan de trabajo remoto y guion de la presentación (20 min)</div>
+  <div class="nombres">
+    <span class="S">Sebastián Sánchez</span><br>
+    <span class="J">Joan Tovar</span><br>
+    <span class="G">Jorge Garzón</span>
+  </div>
+  <div class="caja" style="text-align:left; margin-top:60px;">
+    <b>Contenido</b>
+    <ol style="margin:4px 0 0 18px; padding:0;">
+      <li>Qué pide el proyecto y cómo lo cumple el código</li>
+      <li>División del trabajo y responsabilidades</li>
+      <li>Plan de trabajo remoto</li>
+      <li>Estructura de la presentación y tiempos</li>
+      <li>Guion completo con diálogos, diapositiva por diapositiva</li>
+      <li>Resultados clave (para tener a mano)</li>
+      <li>Preguntas probables del jurado y respuestas sugeridas</li>
+    </ol>
+  </div>
+</div>
+
+<h2 class="salto">1. Qué pide el proyecto y cómo lo cumple el código</h2>
+<p><b>Objetivo general:</b> simular numéricamente la contribución electrónica a la capacidad calorífica de un metal
+integrando la densidad de estados g(E) con la distribución de Fermi-Dirac f(E,T).</p>
+<table>
+  <tr><th style="width:30%">Requisito</th><th>Implementación en <code>sommerfeld_cv.py</code></th></tr>
+  <tr><td>i. Energía interna térmica integrando g(E)·E·f(E,T)</td>
+      <td><code>energia_interna()</code>: U(T) = <span style="font-style:italic;font-size:1.2em">ʃ</span> E g(E) f(E,T) dE y ΔU = U(T) − U(0), con U(0) = (3/5) N E<sub>F</sub>.</td></tr>
+  <tr><td>ii. C<sub>V</sub>(T) por derivación numérica y contraste con Sommerfeld</td>
+      <td><code>derivada_numerica()</code> y la comparación con C<sub>V</sub> = (π²/2) N k<sub>B</sub> T/T<sub>F</sub> (gráficas 5 y 6).</td></tr>
+  <tr><td>Resolución de la ecuación de ligadura μ(T)</td>
+      <td><code>potencial_quimico()</code>: Newton-Raphson programado por nosotros, con salvaguarda de bisección. La derivada dN/dμ = <span style="font-style:italic;font-size:1.2em">ʃ</span> g (−df/dE) dE también se integra. Verificación cruzada con el método de Brent.</td></tr>
+  <tr><td>Integración numérica adaptativa de alta precisión</td>
+      <td><code>scipy.integrate.quad</code> (Gauss-Kronrod 21 puntos adaptativo, QUADPACK), tolerancia 10⁻¹³, punto de ruptura en E = μ y corte en μ + 40 k<sub>B</sub>T.</td></tr>
+  <tr><td>Diferenciación numérica y extracción de γ</td>
+      <td>Diferencias centrales O(h²) (<code>np.gradient</code>) y ajuste por mínimos cuadrados C<sub>V</sub> = γT + δT³ (<code>ajustar_gamma()</code>).</td></tr>
+</table>
+
+<h3>Cambios hechos al código original</h3>
+<ul>
+  <li><b>Algoritmo iterativo propio para μ(T).</b> Antes solo se llamaba a <code>brentq</code>. Ahora hay un Newton-Raphson con bisección de respaldo que converge en 3 o 4 iteraciones, con continuación (la semilla es el μ de la temperatura anterior). Brent queda como verificación: ambos coinciden a ~10⁻¹⁵.</li>
+  <li><b>Extracción de γ sin sesgo.</b> El ajuste C<sub>V</sub> = γT sobre t <u>&lt;</u> 0.05 daba γ = 4.9117 (−0.47 %), porque ignora la corrección cúbica de Sommerfeld. Con C<sub>V</sub> = γT + δT³ se obtiene γ = 4.93493 frente a π²/2 = 4.93480 (error 0.003 %). Además se excluyen los extremos de la rejilla, donde la derivada es de un solo lado.</li>
+  <li><b>Más validaciones:</b> sensibilidad a la tolerancia de <code>quad</code>, curva de Sommerfeld de segundo orden (con el término t³), convergencia de γ con el paso h y valor de U para t <svg width="13" height="9" viewBox="0 0 13 9" style="vertical-align:middle"><path d="M0 4.5h11M8 1.5l3 3-3 3" stroke="currentColor" fill="none" stroke-width="1.3"/></svg> 0.</li>
+  <li><b>Aplicación física al cobre:</b> γ en mJ/(mol K²), comparación con el valor experimental y estimación de la masa efectiva m*/m.</li>
+  <li><b>Figuras individuales en <code>figuras/</code></b> para pegarlas en las diapositivas, opción <code>--sin-ventana</code>, <code>README.md</code> y <code>requirements.txt</code>.</li>
+</ul>
+<p class="peq">El código original era correcto en lo físico: sus resultados coinciden con la réplica de verificación hasta ~10⁻¹². Los cambios atienden los requisitos del enunciado (algoritmo iterativo y extracción de γ) y la solidez del análisis.</p>
+
+<h2>2. División del trabajo</h2>
+<p>La división sigue los tres bloques del enunciado. Cada uno es dueño de una parte del código, de sus diapositivas y de su parte del discurso, y revisa el trabajo de otro.</p>
+<table>
+  <tr><th style="width:17%">Integrante</th><th style="width:30%">Tema en la presentación</th><th>Tareas antes de la presentación</th><th style="width:16%">Revisa a</th></tr>
+  <tr><td class="S">Sebastián Sánchez<br><span class="peq">(coordinador)</span></td>
+      <td>Motivación, modelo físico (g(E), Fermi-Dirac), unidades adimensionales y predicción de Sommerfeld. Apertura y cierre.</td>
+      <td><ul><li>Crear la plantilla de diapositivas compartida y fijar el estilo.</li>
+          <li>Diapositivas 1–5 y 16.</li>
+          <li>Funciones <code>densidad_estados</code> y <code>fermi_dirac</code>; gráficas 1 y 2.</li>
+          <li>Integrar las ramas en <code>main</code> y organizar los ensayos.</li></ul></td>
+      <td>Jorge</td></tr>
+  <tr><td class="J">Joan Tovar</td>
+      <td>Esquema del algoritmo, ecuación de ligadura μ(T) (Newton-Raphson) e integración adaptativa de U(T).</td>
+      <td><ul><li>Diapositivas 6–10.</li>
+          <li>Funciones <code>potencial_quimico</code>, <code>numero_particulas</code>, <code>energia_interna</code>; gráficas 3 y 4.</li>
+          <li>Tabla de convergencia de Newton y de sensibilidad al corte E<sub>max</sub>.</li></ul></td>
+      <td>Sebastián</td></tr>
+  <tr><td class="G">Jorge Garzón</td>
+      <td>Diferenciación numérica, C<sub>V</sub>(T), extracción de γ, aplicación al cobre y conclusiones.</td>
+      <td><ul><li>Diapositivas 11–15.</li>
+          <li>Funciones <code>derivada_numerica</code>, <code>ajustar_gamma</code>; gráficas 5 y 6.</li>
+          <li>Conversión a unidades físicas y comparación con datos experimentales.</li></ul></td>
+      <td>Joan</td></tr>
+</table>
+
+<h2>3. Plan de trabajo remoto</h2>
+<table>
+  <tr><th style="width:22%">Herramienta</th><th>Uso</th></tr>
+  <tr><td>GitHub (este repositorio)</td><td>Código único. Cada uno trabaja en su rama (<code>sebastian</code>, <code>joan</code>, <code>jorge</code>) y abre un pull request que revisa el compañero asignado. Nadie sube directamente a <code>main</code>.</td></tr>
+  <tr><td>Google Slides / Canva</td><td>Una sola presentación compartida; cada uno edita solo sus diapositivas. Las gráficas salen de <code>figuras/</code>.</td></tr>
+  <tr><td>WhatsApp</td><td>Avisos rápidos y bloqueos. Las decisiones se anotan en el README o en el PR para que no se pierdan.</td></tr>
+  <tr><td>Google Meet / Zoom</td><td>Dos ensayos completos con cronómetro, grabados para revisar tiempos y muletillas.</td></tr>
+</table>
+<h3>Cronograma sugerido (ajustar a la fecha de entrega)</h3>
+<table>
+  <tr><th style="width:15%">Día</th><th>Actividad</th><th style="width:22%">Entregable</th></tr>
+  <tr><td>Día 1</td><td>Reunión virtual corta (20 min): leer este documento, confirmar roles. Todos ejecutan <code>python sommerfeld_cv.py</code> y comparan sus números con la sección 6.</td><td>Roles confirmados</td></tr>
+  <tr><td>Días 2–3</td><td>Cada uno estudia su parte del código y la teoría que va a explicar. Sebastián sube la plantilla.</td><td>Plantilla de diapositivas</td></tr>
+  <tr><td>Días 4–5</td><td>Cada uno arma sus diapositivas y practica su guion solo, con cronómetro.</td><td>Diapositivas en borrador</td></tr>
+  <tr><td>Día 6</td><td>Ensayo 1 por videollamada, completo y grabado. Correcciones cruzadas.</td><td>Lista de correcciones</td></tr>
+  <tr><td>Día 7</td><td>Ensayo 2 final. Exportar a PDF como respaldo. Probar compartir pantalla y el cambio de presentador.</td><td>Versión final</td></tr>
+</table>
+<div class="caja"><b>Si la presentación es virtual:</b> una sola persona (Sebastián) comparte pantalla y pasa las diapositivas. Cada orador dice “siguiente” cuando le toque. Así se evita el cambio de pantalla, que suele costar 30–60 s. Todos deben tener el PDF de respaldo abierto por si alguien pierde la conexión: el siguiente orador continúa desde ahí.</div>
+
+<h2 class="salto">4. Estructura de la presentación y tiempos</h2>
+<div class="barra">
+  <div style="width:32.5%; background:#0b6e4f;">Sebastián 0:00–6:30</div>
+  <div style="width:32.5%; background:#a33b00;">Joan 6:30–13:00</div>
+  <div style="width:32.5%; background:#5b2a86;">Jorge 13:00–19:30</div>
+  <div style="width:2.5%; background:#0b6e4f;"></div>
+</div>
+<p class="peq" style="margin-top:0">Cada integrante habla ~6.5 minutos. El último medio minuto es el cierre conjunto.</p>
+<table>
+  <tr><th>#</th><th>Diapositiva</th><th>Orador</th><th>Tiempo</th><th>Duración</th></tr>
+  <tr><td>1</td><td>Portada y presentación del equipo</td><td class="S">Sebastián</td><td>0:00–0:45</td><td>0:45</td></tr>
+  <tr><td>2</td><td>Motivación: el problema del calor específico clásico</td><td class="S">Sebastián</td><td>0:45–2:15</td><td>1:30</td></tr>
+  <tr><td>3</td><td>Objetivos general y específicos</td><td class="S">Sebastián</td><td>2:15–3:00</td><td>0:45</td></tr>
+  <tr><td>4</td><td>Modelo: densidad de estados y Fermi-Dirac</td><td class="S">Sebastián</td><td>3:00–4:45</td><td>1:45</td></tr>
+  <tr><td>5</td><td>Unidades adimensionales y predicción de Sommerfeld</td><td class="S">Sebastián</td><td>4:45–6:30</td><td>1:45</td></tr>
+  <tr><td>6</td><td>Esquema del algoritmo</td><td class="J">Joan</td><td>6:30–7:30</td><td>1:00</td></tr>
+  <tr><td>7</td><td>Ecuación de ligadura: Newton-Raphson salvaguardado</td><td class="J">Joan</td><td>7:30–9:15</td><td>1:45</td></tr>
+  <tr><td>8</td><td>Resultado μ(T) y conservación de N</td><td class="J">Joan</td><td>9:15–10:30</td><td>1:15</td></tr>
+  <tr><td>9</td><td>Integración adaptativa de U(T)</td><td class="J">Joan</td><td>10:30–12:00</td><td>1:30</td></tr>
+  <tr><td>10</td><td>Energía térmica ΔU frente a (π²/4) t²</td><td class="J">Joan</td><td>12:00–13:00</td><td>1:00</td></tr>
+  <tr><td>11</td><td>Diferenciación numérica</td><td class="G">Jorge</td><td>13:00–14:15</td><td>1:15</td></tr>
+  <tr><td>12</td><td>C<sub>V</sub>(T) numérico frente a Sommerfeld</td><td class="G">Jorge</td><td>14:15–15:45</td><td>1:30</td></tr>
+  <tr><td>13</td><td>Extracción de γ y convergencia</td><td class="G">Jorge</td><td>15:45–17:00</td><td>1:15</td></tr>
+  <tr><td>14</td><td>Aplicación al cobre</td><td class="G">Jorge</td><td>17:00–18:30</td><td>1:30</td></tr>
+  <tr><td>15</td><td>Conclusiones</td><td class="G">Jorge</td><td>18:30–19:30</td><td>1:00</td></tr>
+  <tr><td>16</td><td>Cierre y preguntas</td><td class="S">Sebastián</td><td>19:30–20:00</td><td>0:30</td></tr>
+</table>
+
+<h2 class="salto">5. Guion con diálogos</h2>
+<p class="peq">El guion está escrito para unas 130 palabras por minuto. No hay que memorizarlo palabra por palabra: sirve de base para practicar. Los textos en cursiva son indicaciones, no se leen.</p>
+
+<div class="slide"><div class="cab">Diapositiva 1 · Portada · <span class="S">Sebastián</span> · 0:00–0:45</div>
+<div class="cont">Título, nombres, materia y fecha.</div>
+<div class="dlg">
+<p><span class="S">Sebastián:</span> Buenos días, profesor y compañeros. Somos Sebastián Sánchez, Joan Tovar y Jorge Garzón. Hoy les presentamos nuestro proyecto de simulación: la capacidad calorífica electrónica de un metal a temperatura finita, usando el modelo de Sommerfeld. Yo voy a introducir la física del problema, Joan explicará cómo calculamos el potencial químico y la energía interna, y Jorge mostrará la capacidad calorífica y lo que obtenemos al aplicarlo a un metal real.</p>
+</div></div>
+
+<div class="slide"><div class="cab">Diapositiva 2 · Motivación · <span class="S">Sebastián</span> · 0:45–2:15</div>
+<div class="cont">Comparación: gas clásico C<sub>V</sub> = (3/2) N k<sub>B</sub> frente a medición real en Cu (~1 % de ese valor a 300 K).</div>
+<div class="dlg">
+<p><span class="S">Sebastián:</span> Empecemos con una pregunta. En un metal como el cobre cada átomo aporta un electrón libre. Si esos electrones se comportaran como un gas ideal clásico, cada uno aportaría tres medios de k<sub>B</sub> a la capacidad calorífica, por el teorema de equipartición. Eso sería tan grande como la contribución de la red cristalina.</p>
+<p>Sin embargo, los experimentos muestran que la contribución de los electrones a temperatura ambiente es apenas del orden del uno por ciento de ese valor. La física clásica no puede explicar esta diferencia.</p>
+<p>La respuesta la dio Arnold Sommerfeld en 1928. Los electrones son fermiones y obedecen el principio de exclusión de Pauli. Solo los electrones cercanos a la energía de Fermi, en una franja de ancho del orden de k<sub>B</sub>T, pueden absorber energía térmica. El resultado es una capacidad calorífica que crece linealmente con la temperatura: C<sub>V</sub> = γT. Nuestro proyecto comprueba esto numéricamente, sin usar la aproximación analítica.</p>
+</div></div>
+
+<div class="slide"><div class="cab">Diapositiva 3 · Objetivos · <span class="S">Sebastián</span> · 2:15–3:00</div>
+<div class="cont">Objetivo general y los dos específicos, tal como aparecen en el enunciado.</div>
+<div class="dlg">
+<p><span class="S">Sebastián:</span> Nuestro objetivo general es simular la contribución electrónica a la capacidad calorífica integrando la densidad de estados con la distribución de Fermi-Dirac. Para eso tenemos dos objetivos específicos. El primero es calcular la energía interna térmica integrando numéricamente el producto de la densidad de estados, la energía y la distribución de Fermi-Dirac. El segundo es obtener la capacidad calorífica por derivación numérica y compararla con la aproximación lineal de Sommerfeld.</p>
+</div></div>
+
+<div class="slide"><div class="cab">Diapositiva 4 · Modelo físico · <span class="S">Sebastián</span> · 3:00–4:45</div>
+<div class="cont">Gráficas 1 (g(ε)) y 2 (Fermi-Dirac a varias T). Ecuaciones: g(E) ~ E<sup>1/2</sup>, f(E) = 1/(e<sup>(E−μ)/k<sub>B</sub>T</sup> + 1).</div>
+<div class="dlg">
+<p><span class="S">Sebastián:</span> El modelo tiene dos ingredientes. El primero es la densidad de estados de un gas de electrones libres en tres dimensiones, que crece como la raíz cuadrada de la energía. Aquí la vemos: a temperatura cero todos los estados están llenos hasta la energía de Fermi, que es la zona sombreada.</p>
+<p>El segundo ingrediente es la distribución de Fermi-Dirac, que da la probabilidad de que un estado de energía E esté ocupado. A temperatura cero es un escalón perfecto. Al subir la temperatura, el escalón se suaviza en una franja de ancho k<sub>B</sub>T alrededor del potencial químico μ. <i>(Señalar la gráfica 2.)</i> Fíjense en que μ depende de la temperatura: no podemos dejarlo fijo, porque el número de electrones tiene que conservarse. Ese es el primer problema numérico, y Joan lo va a explicar.</p>
+<p>Con estos dos ingredientes, el número de electrones es la integral de g por f, y la energía interna es la integral de E por g por f.</p>
+</div></div>
+
+<div class="slide"><div class="cab">Diapositiva 5 · Unidades y predicción de Sommerfeld · <span class="S">Sebastián</span> · 4:45–6:30</div>
+<div class="cont">ε = E/E<sub>F</sub>, t = T/T<sub>F</sub>, g(ε) = (3/2)ε<sup>1/2</sup>. Predicción: μ = 1 − (π²/12)t², ΔU = (π²/4)t², C<sub>V</sub>/(Nk<sub>B</sub>) = (π²/2)t.</div>
+<div class="dlg">
+<p><span class="S">Sebastián:</span> Para que el problema sirva para cualquier metal trabajamos en unidades adimensionales. Medimos la energía en unidades de la energía de Fermi y la temperatura en unidades de la temperatura de Fermi. Normalizamos la densidad de estados a tres medios de raíz de épsilon, de modo que a temperatura cero hay exactamente un electrón por partícula y la energía interna es tres quintos.</p>
+<p>La expansión de Sommerfeld predice tres cosas que vamos a contrastar: el potencial químico baja como uno menos pi cuadrado sobre doce por t al cuadrado; la energía térmica crece como pi cuadrado sobre cuatro por t al cuadrado; y la capacidad calorífica es lineal, pi cuadrado medios por t. Es decir, en estas unidades esperamos γ = π²/2, aproximadamente 4.935.</p>
+<p>Para un metal típico, la temperatura de Fermi es de decenas de miles de kelvin, así que a temperatura ambiente t es del orden de milésimas. Joan, ¿cómo resolvimos esto en el computador?</p>
+</div></div>
+
+<div class="slide"><div class="cab">Diapositiva 6 · Esquema del algoritmo · <span class="J">Joan</span> · 6:30–7:30</div>
+<div class="cont">Diagrama de flujo: para cada T <svg width="13" height="9" viewBox="0 0 13 9" style="vertical-align:middle"><path d="M0 4.5h11M8 1.5l3 3-3 3" stroke="currentColor" fill="none" stroke-width="1.3"/></svg> resolver μ(T) <svg width="13" height="9" viewBox="0 0 13 9" style="vertical-align:middle"><path d="M0 4.5h11M8 1.5l3 3-3 3" stroke="currentColor" fill="none" stroke-width="1.3"/></svg> integrar U(T) <svg width="13" height="9" viewBox="0 0 13 9" style="vertical-align:middle"><path d="M0 4.5h11M8 1.5l3 3-3 3" stroke="currentColor" fill="none" stroke-width="1.3"/></svg> (al final) derivar C<sub>V</sub> <svg width="13" height="9" viewBox="0 0 13 9" style="vertical-align:middle"><path d="M0 4.5h11M8 1.5l3 3-3 3" stroke="currentColor" fill="none" stroke-width="1.3"/></svg> ajustar γ.</div>
+<div class="dlg">
+<p><span class="J">Joan:</span> Gracias, Sebastián. El programa sigue este esquema. Tomamos una rejilla de 200 temperaturas entre t = 0.01 y t = 0.5. Para cada temperatura hacemos dos cosas: primero encontramos el potencial químico que conserva el número de electrones, y con ese μ integramos la energía interna. Cuando tenemos U en toda la rejilla, Jorge la deriva para obtener la capacidad calorífica. Todo está en Python, con NumPy, SciPy y Matplotlib, en un repositorio de GitHub que compartimos los tres.</p>
+</div></div>
+
+<div class="slide"><div class="cab">Diapositiva 7 · Ecuación de ligadura · <span class="J">Joan</span> · 7:30–9:15</div>
+<div class="cont">F(μ) = <span style="font-style:italic;font-size:1.2em">ʃ</span> g f dε − 1 = 0; μ<sub>k+1</sub> = μ<sub>k</sub> − F/F′, con F′ = <span style="font-style:italic;font-size:1.2em">ʃ</span> g(−df/dε) dε &gt; 0; intervalo [a, b] y bisección de respaldo.</div>
+<div class="dlg">
+<p><span class="J">Joan:</span> La ecuación de ligadura dice que la integral de g por f tiene que dar uno para cualquier temperatura. La incógnita es μ, y la escribimos como un problema de raíces: F(μ) = N(μ) − 1 = 0.</p>
+<p>Implementamos el método de Newton-Raphson. La ventaja es que la derivada de F también se calcula con una integral: es g multiplicada por menos la derivada de Fermi-Dirac, que es un pico centrado en μ. Esa derivada siempre es positiva, así que N crece con μ y la raíz es única.</p>
+<p>Para que el método no falle, le pusimos una salvaguarda. Mantenemos un intervalo que siempre contiene la raíz, y si un paso de Newton se sale de él, hacemos un paso de bisección. Además usamos continuación: el μ de una temperatura es la semilla de la siguiente. Con eso el método converge en tres o cuatro iteraciones por temperatura. Para verificar, comparamos con el método de Brent de SciPy, y la diferencia es del orden de 10⁻¹⁵.</p>
+</div></div>
+
+<div class="slide"><div class="cab">Diapositiva 8 · Resultado μ(T) · <span class="J">Joan</span> · 9:15–10:30</div>
+<div class="cont">Gráfica 3: μ(T) numérico frente a 1 − (π²/12)t². Dato: max|N − 1| ~ 10⁻¹⁵.</div>
+<div class="dlg">
+<p><span class="J">Joan:</span> Este es el resultado. La curva azul es nuestro μ numérico y la roja punteada es la predicción de Sommerfeld. A bajas temperaturas coinciden; por ejemplo, en t = 0.01 obtenemos 0.99991774 y la fórmula da 0.99991775: coinciden hasta la séptima cifra decimal. Al subir la temperatura las curvas se separan, porque la fórmula es solo el primer término de una serie. En t = 1 el potencial químico ya es ligeramente negativo, −0.021, que es el comportamiento de un gas clásico.</p>
+<p>Lo más importante es que el número de electrones se conserva: la desviación máxima de N respecto a uno, en toda la rejilla, es del orden de 10⁻¹⁵, que es la precisión de la máquina.</p>
+</div></div>
+
+<div class="slide"><div class="cab">Diapositiva 9 · Integración adaptativa · <span class="J">Joan</span> · 10:30–12:00</div>
+<div class="cont">U = <span style="font-style:italic;font-size:1.2em">ʃ</span><sub>0</sub><sup>E<sub>max</sub></sup> ε g f dε, Gauss-Kronrod adaptativo (QUADPACK), E<sub>max</sub> = μ + 40t, punto de ruptura en μ. Tabla de sensibilidad.</div>
+<div class="dlg">
+<p><span class="J">Joan:</span> Con μ conocido, calculamos la energía interna. El reto es que, a baja temperatura, Fermi-Dirac cambia de uno a cero en una franja muy angosta. Si usáramos una regla de paso fijo, como Simpson, necesitaríamos muchísimos puntos.</p>
+<p>Por eso usamos cuadratura adaptativa de Gauss-Kronrod, de la librería QUADPACK que viene en SciPy. El método estima el error en cada subintervalo y solo divide donde hace falta. Le indicamos que hay un punto delicado en E = μ para que refine ahí, y le pedimos tolerancia relativa de 10⁻¹³.</p>
+<p>La integral va en principio hasta infinito, pero la cola de Fermi-Dirac decae como e<sup>−(E−μ)/k<sub>B</sub>T</sup>. Cortamos en μ más 40 k<sub>B</sub>T, donde la cola vale unos 10⁻¹⁸. Comprobamos que si movemos el corte a 30 o a 60 k<sub>B</sub>T la energía cambia menos de 10⁻¹³.</p>
+</div></div>
+
+<div class="slide"><div class="cab">Diapositiva 10 · Energía térmica · <span class="J">Joan</span> · 12:00–13:00</div>
+<div class="cont">Gráfica 4: ΔU numérico frente a (π²/4)t². Ajuste a t²: coeficiente ~ π²/4 = 2.467.</div>
+<div class="dlg">
+<p><span class="J">Joan:</span> Aquí está la energía térmica, es decir, la energía interna menos su valor a temperatura cero, tres quintos. Crece como t al cuadrado, como predice Sommerfeld. Al ajustar a baja temperatura obtenemos un coeficiente muy cercano a pi cuadrado sobre cuatro, 2.467, y la pequeña diferencia viene de la corrección de orden t⁴. Con esta curva ya tenemos todo lo necesario para la capacidad calorífica. Jorge, sigue tú.</p>
+</div></div>
+
+<div class="slide"><div class="cab">Diapositiva 11 · Diferenciación numérica · <span class="G">Jorge</span> · 13:00–14:15</div>
+<div class="cont">C<sub>V</sub> ~ [U(T+h) − U(T−h)]/(2h), error O(h²); extremos con fórmula de segundo orden.</div>
+<div class="dlg">
+<p><span class="G">Jorge:</span> Gracias, Joan. La capacidad calorífica es la derivada de la energía interna respecto a la temperatura. Como tenemos U en una rejilla, usamos diferencias centrales: U en T más h, menos U en T menos h, dividido entre 2h. El error de esta fórmula es proporcional a h al cuadrado. En los extremos de la rejilla no hay vecino a ambos lados, así que usamos una fórmula de un solo lado, también de segundo orden.</p>
+<p>Un punto importante: derivar amplifica el ruido. Un error de 10⁻⁶ en U, que parece pequeño, al dividir entre 2h = 0.005 se convierte en un error de casi 0.5 % en C<sub>V</sub> a la temperatura más baja. Por eso fue necesaria la alta precisión de la integración que explicó Joan.</p>
+</div></div>
+
+<div class="slide"><div class="cab">Diapositiva 12 · C<sub>V</sub>(T) frente a Sommerfeld · <span class="G">Jorge</span> · 14:15–15:45</div>
+<div class="cont">Gráficas 5 y 6. Razón C<sub>V</sub>/C<sub>V</sub><sup>Somm</sup>: 0.967 (t = 0.1), 0.714 (t = 0.3), 0.512 (t = 0.5); C<sub>V</sub> <svg width="13" height="9" viewBox="0 0 13 9" style="vertical-align:middle"><path d="M0 4.5h11M8 1.5l3 3-3 3" stroke="currentColor" fill="none" stroke-width="1.3"/></svg> 3/2 en t ~ 1.</div>
+<div class="dlg">
+<p><span class="G">Jorge:</span> Este es el resultado principal. La curva azul es la capacidad calorífica numérica y la roja es la recta de Sommerfeld. A bajas temperaturas son prácticamente iguales: el comportamiento es lineal.</p>
+<p>A la derecha está el cociente entre las dos. En t = 0.1 la simulación da el 96.7 % del valor lineal; en t = 0.3, el 71 %; y en t = 0.5, el 51 %. Esto muestra hasta dónde vale la aproximación lineal. Si agregamos el siguiente término de la expansión, menos 3π⁴/20 por t al cubo, la curva magenta, el acuerdo se extiende un poco más.</p>
+<p>A temperaturas del orden de la temperatura de Fermi, la capacidad calorífica se acerca al valor clásico de tres medios. Es decir, el mismo programa reproduce los dos límites: el cuántico a baja temperatura y el clásico a alta temperatura.</p>
+</div></div>
+
+<div class="slide"><div class="cab">Diapositiva 13 · Extracción de γ · <span class="G">Jorge</span> · 15:45–17:00</div>
+<div class="cont">Tabla: ajuste C<sub>V</sub> = γt <svg width="13" height="9" viewBox="0 0 13 9" style="vertical-align:middle"><path d="M0 4.5h11M8 1.5l3 3-3 3" stroke="currentColor" fill="none" stroke-width="1.3"/></svg> 4.9117 (−0.47 %); C<sub>V</sub> = γt + δt³ <svg width="13" height="9" viewBox="0 0 13 9" style="vertical-align:middle"><path d="M0 4.5h11M8 1.5l3 3-3 3" stroke="currentColor" fill="none" stroke-width="1.3"/></svg> 4.93493 (0.003 %); teoría 4.93480. Convergencia con h.</div>
+<div class="dlg">
+<p><span class="G">Jorge:</span> Para extraer el coeficiente lineal γ hicimos un ajuste por mínimos cuadrados con los puntos de t menor o igual a 0.05. Primero ajustamos una recta pura que pasa por el origen y obtuvimos 4.912, que es medio por ciento menor que el valor teórico. Ese error no viene de la derivada, sino del modelo de ajuste: incluso a t = 0.05 la corrección cúbica ya pesa un poco.</p>
+<p>Cuando ajustamos γt más δt³, obtenemos γ = 4.93493 frente a π²/2 = 4.93480, un error de tres milésimas de por ciento. El coeficiente cúbico sale −15.0, cercano al teórico de −14.6. También comprobamos la convergencia: al pasar de 50 a 400 puntos en la rejilla, γ se estabiliza en la cuarta cifra decimal.</p>
+</div></div>
+
+<div class="slide"><div class="cab">Diapositiva 14 · Aplicación al cobre · <span class="G">Jorge</span> · 17:00–18:30</div>
+<div class="cont">E<sub>F</sub> = 7.0 eV <svg width="13" height="9" viewBox="0 0 13 9" style="vertical-align:middle"><path d="M0 4.5h11M8 1.5l3 3-3 3" stroke="currentColor" fill="none" stroke-width="1.3"/></svg> T<sub>F</sub> ~ 81 200 K. γ<sub>teo</sub> = 0.505 mJ/(mol K²), γ<sub>exp</sub> = 0.695 <svg width="13" height="9" viewBox="0 0 13 9" style="vertical-align:middle"><path d="M0 4.5h11M8 1.5l3 3-3 3" stroke="currentColor" fill="none" stroke-width="1.3"/></svg> m*/m ~ 1.38. C<sub>V,el</sub>(300 K) ~ 0.15 J/(mol K) frente a 3R ~ 24.9.</div>
+<div class="dlg">
+<p><span class="G">Jorge:</span> Ahora llevemos esto a un metal real. El cobre tiene una energía de Fermi de unos 7 eV, que corresponde a una temperatura de Fermi de unos 81 000 kelvin. A temperatura ambiente, t es apenas 0.0037, así que estamos en el régimen lineal.</p>
+<p>Al pasar nuestro γ a unidades físicas obtenemos 0.505 milijoules por mol por kelvin al cuadrado. El valor medido en el cobre es 0.695. La diferencia de un 38 % se interpreta como una masa efectiva de los electrones: el modelo de electrones libres no incluye la red cristalina ni la interacción con los fonones, y esos efectos hacen que los electrones se comporten como si pesaran 1.38 veces más.</p>
+<p>A 300 K la contribución electrónica es de unos 0.15 J/(mol K), frente a 25 de la red, y apenas el 1.2 % de los 12.5 J/(mol K) que predecía la física clásica. Esa es la diferencia de la que hablaba Sebastián al principio. A temperaturas muy bajas, en cambio, la red decae como T³ y los electrones dominan.</p>
+</div></div>
+
+<div class="slide"><div class="cab">Diapositiva 15 · Conclusiones · <span class="G">Jorge</span> · 18:30–19:30</div>
+<div class="cont">Cuatro viñetas cortas.</div>
+<div class="dlg">
+<p><span class="G">Jorge:</span> Para concluir: primero, resolvimos la ecuación de ligadura con un Newton-Raphson salvaguardado que conserva el número de electrones a precisión de máquina en tres o cuatro iteraciones. Segundo, la cuadratura adaptativa nos permitió integrar el escalón de Fermi-Dirac con precisión de 10⁻¹³, suficiente para derivar sin amplificar errores. Tercero, la capacidad calorífica numérica es lineal a baja temperatura, y el γ que extraemos coincide con π²/2 dentro de 0.003 %. Cuarto, el mismo cálculo muestra dónde deja de valer Sommerfeld y cómo se recupera el límite clásico.</p>
+</div></div>
+
+<div class="slide"><div class="cab">Diapositiva 16 · Cierre · <span class="S">Sebastián</span> · 19:30–20:00</div>
+<div class="cont">“Gracias” y enlace al repositorio.</div>
+<div class="dlg">
+<p><span class="S">Sebastián:</span> En resumen, con un modelo sencillo y tres métodos numéricos bien controlados explicamos por qué los electrones de un metal casi no contribuyen al calor específico. El código está en nuestro repositorio de GitHub. Muchas gracias; con gusto respondemos sus preguntas.</p>
+</div></div>
+
+<h2 class="salto">6. Resultados clave (para tener a mano)</h2>
+<p class="peq">Valores de referencia que debe reproducir <code>python sommerfeld_cv.py</code>. Si alguno de ustedes obtiene números distintos en las primeras cifras, avise al grupo.</p>
+<table>
+  <tr><th>Magnitud</th><th>Valor numérico</th><th>Referencia teórica</th></tr>
+  <tr><td>max|N − 1| en la rejilla</td><td>~10⁻¹⁵</td><td>0</td></tr>
+  <tr><td>Iteraciones de Newton por temperatura</td><td>3–4 (media 3.65)</td><td>—</td></tr>
+  <tr><td>μ/E<sub>F</sub> en t = 0.01</td><td>0.99991774</td><td>1 − (π²/12)t² = 0.99991775</td></tr>
+  <tr><td>μ/E<sub>F</sub> en t = 0.5 y t = 1.0</td><td>0.7431 y −0.0215</td><td>(fuera del régimen lineal)</td></tr>
+  <tr><td>γ con ajuste C<sub>V</sub> = γt</td><td>4.9117 (−0.47 %)</td><td>π²/2 = 4.934802</td></tr>
+  <tr><td>γ con ajuste C<sub>V</sub> = γt + δt³</td><td>4.934927 (+0.003 %)</td><td>π²/2 = 4.934802</td></tr>
+  <tr><td>δ (coeficiente de t³)</td><td>−14.98</td><td>−3π⁴/20 = −14.61</td></tr>
+  <tr><td>γ con 50 / 100 / 200 / 400 puntos</td><td>4.93362 / 4.93468 / 4.93493 / 4.93498</td><td>4.934802</td></tr>
+  <tr><td>C<sub>V</sub>/C<sub>V</sub><sup>Somm</sup> en t = 0.1 / 0.3 / 0.5 / 1.0</td><td>0.967 / 0.714 / 0.512 / 0.285</td><td>1 en el régimen lineal</td></tr>
+  <tr><td>C<sub>V</sub>/(N k<sub>B</sub>) en t = 1.0</td><td>1.41</td><td>límite clásico 1.5</td></tr>
+  <tr><td>Cobre: T<sub>F</sub></td><td>81 232 K</td><td>E<sub>F</sub> = 7.0 eV</td></tr>
+  <tr><td>Cobre: γ</td><td>0.505 mJ/(mol K²)</td><td>experimental 0.695 <svg width="13" height="9" viewBox="0 0 13 9" style="vertical-align:middle"><path d="M0 4.5h11M8 1.5l3 3-3 3" stroke="currentColor" fill="none" stroke-width="1.3"/></svg> m*/m ~ 1.38</td></tr>
+  <tr><td>Cobre: C<sub>V,el</sub> a 300 K</td><td>0.152 J/(mol K)</td><td>red: 3R = 24.94 J/(mol K)</td></tr>
+</table>
+<div class="caja" style="padding:6px 8px;">
+<b>C<sub>V</sub>(T) calculado frente a Sommerfeld</b> (misma curva que la gráfica 5 del programa)
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 330" width="100%">
+<rect width="100%" height="100%" fill="white"/>
+<line x1="60" x2="620" y1="290.0" y2="290.0" stroke="#ddd"/><text x="52" y="294.0" font-size="11" text-anchor="end">0</text>
+<line x1="60" x2="620" y1="222.5" y2="222.5" stroke="#ddd"/><text x="52" y="226.5" font-size="11" text-anchor="end">0.5</text>
+<line x1="60" x2="620" y1="155.0" y2="155.0" stroke="#ddd"/><text x="52" y="159.0" font-size="11" text-anchor="end">1.0</text>
+<line x1="60" x2="620" y1="87.5" y2="87.5" stroke="#ddd"/><text x="52" y="91.5" font-size="11" text-anchor="end">1.5</text>
+<line x1="60" x2="620" y1="20.0" y2="20.0" stroke="#ddd"/><text x="52" y="24.0" font-size="11" text-anchor="end">2.0</text>
+<line x1="60.0" x2="60.0" y1="20" y2="290" stroke="#eee"/><text x="60.0" y="306" font-size="11" text-anchor="middle">0</text>
+<line x1="172.0" x2="172.0" y1="20" y2="290" stroke="#eee"/><text x="172.0" y="306" font-size="11" text-anchor="middle">0.2</text>
+<line x1="284.0" x2="284.0" y1="20" y2="290" stroke="#eee"/><text x="284.0" y="306" font-size="11" text-anchor="middle">0.4</text>
+<line x1="396.0" x2="396.0" y1="20" y2="290" stroke="#eee"/><text x="396.0" y="306" font-size="11" text-anchor="middle">0.6</text>
+<line x1="508.0" x2="508.0" y1="20" y2="290" stroke="#eee"/><text x="508.0" y="306" font-size="11" text-anchor="middle">0.8</text>
+<line x1="620.0" x2="620.0" y1="20" y2="290" stroke="#eee"/><text x="620.0" y="306" font-size="11" text-anchor="middle">1.0</text>
+<text x="350.0" y="324" font-size="12" text-anchor="middle">t = T/T_F</text>
+<text x="14" y="155.0" font-size="12" text-anchor="middle" transform="rotate(-90 14 155.0)">C_V/(N k_B)</text>
+<line x1="60" x2="620" y1="87.5" y2="87.5" stroke="#888" stroke-dasharray="2,4" stroke-width="1.5"/>
+<polyline fill="none" stroke="#d62728" stroke-width="2.2" stroke-dasharray="7,5" points="65.6,283.3 70.3,277.8 74.9,272.3 79.6,266.7 84.2,261.2 88.9,255.6 93.6,250.1 98.2,244.5 102.9,239.0 107.5,233.5 112.2,227.9 116.8,222.4 121.5,216.8 126.2,211.3 130.8,205.7 135.5,200.2 140.1,194.7 144.8,189.1 149.5,183.6 154.1,178.0 158.8,172.5 163.4,166.9 168.1,161.4 172.8,155.9 177.4,150.3 182.1,144.8 186.7,139.2 191.4,133.7 196.0,128.2 200.7,122.6 205.4,117.1 210.0,111.5 214.7,106.0 219.3,100.4 224.0,94.9 228.7,89.4 233.3,83.8 238.0,78.3 242.6,72.7 247.3,67.2 252.0,61.6 256.6,56.1 261.3,50.6 265.9,45.0 270.6,39.5 275.2,33.9 279.9,28.4 284.6,22.8 289.2,17.3"/>
+<polyline fill="none" stroke="#1f4e9c" stroke-width="2.2"  points="65.6,283.3 70.3,277.8 74.9,272.3 79.6,266.8 84.2,261.3 88.9,255.9 93.6,250.5 98.2,245.2 102.9,239.9 107.5,234.8 112.2,229.7 116.8,224.7 121.5,219.8 126.2,215.1 130.8,210.5 135.5,206.0 140.1,201.8 144.8,197.6 149.5,193.6 154.1,189.8 158.8,186.2 163.4,182.7 168.1,179.3 172.8,176.1 177.4,173.1 182.1,170.2 186.7,167.4 191.4,164.7 196.0,162.2 200.7,159.8 205.4,157.5 210.0,155.3 214.7,153.2 219.3,151.1 224.0,149.2 228.7,147.4 233.3,145.6 238.0,144.0 242.6,142.4 247.3,140.8 252.0,139.3 256.6,137.9 261.3,136.6 265.9,135.3 270.6,134.0 275.2,132.8 279.9,131.7 284.6,130.6 289.2,129.5 293.9,128.5 298.5,127.5 303.2,126.6 307.9,125.7 312.5,124.8 317.2,124.0 321.8,123.1 326.5,122.4 331.2,121.6 335.8,120.9 340.5,120.2 345.1,119.5 349.8,118.8 354.4,118.2 359.1,117.6 363.8,117.0 368.4,116.4 373.1,115.8 377.7,115.3 382.4,114.7 387.1,114.2 391.7,113.7 396.4,113.2 401.0,112.8 405.7,112.3 410.4,111.9 415.0,111.5 419.7,111.0 424.3,110.6 429.0,110.2 433.6,109.9 438.3,109.5 443.0,109.1 447.6,108.8 452.3,108.4 456.9,108.1 461.6,107.8 466.3,107.4 470.9,107.1 475.6,106.8 480.2,106.5 484.9,106.3 489.6,106.0 494.2,105.7 498.9,105.4 503.5,105.2 508.2,104.9 512.8,104.7 517.5,104.4 522.2,104.2 526.8,104.0 531.5,103.7 536.1,103.5 540.8,103.3 545.5,103.1 550.1,102.9 554.8,102.7 559.4,102.5 564.1,102.3 568.8,102.1 573.4,101.9 578.1,101.7 582.7,101.5 587.4,101.4 592.0,101.2 596.7,101.0 601.4,100.9 606.0,100.7 610.7,100.5 615.3,100.4 620.0,100.2"/>
+<line x1="410" x2="440" y1="38" y2="38" stroke="#1f4e9c" stroke-width="2.2" /><text x="448" y="42" font-size="12">numérico dU/dT</text>
+<line x1="410" x2="440" y1="56" y2="56" stroke="#d62728" stroke-width="2.2" stroke-dasharray="7,5"/><text x="448" y="60" font-size="12">Sommerfeld (π²/2) t</text>
+<line x1="410" x2="440" y1="74" y2="74" stroke="#888" stroke-width="2.2" stroke-dasharray="2,4"/><text x="448" y="78" font-size="12">límite clásico 3/2</text>
+</svg>
+</div>
+
+<h2>7. Preguntas probables del jurado</h2>
+<table>
+  <tr><th style="width:33%">Pregunta</th><th>Respuesta sugerida</th><th style="width:12%">Responde</th></tr>
+  <tr><td>¿Por qué la capacidad calorífica electrónica es lineal en T?</td><td>Solo se excitan los electrones en una franja ~k<sub>B</sub>T alrededor de E<sub>F</sub>; su número es ~g(E<sub>F</sub>)k<sub>B</sub>T y cada uno gana ~k<sub>B</sub>T. Entonces ΔU crece como T² y C<sub>V</sub> como T.</td><td class="S">Sebastián</td></tr>
+  <tr><td>¿Por qué no dejaron μ = E<sub>F</sub> fijo?</td><td>Porque entonces N no se conservaría: con g ~ E<sup>1/2</sup>, al suavizarse el escalón se ganan más estados arriba de los que se pierden abajo. Un μ fijo mete un error de orden t² en U, del mismo orden que el efecto que queremos medir.</td><td class="J">Joan</td></tr>
+  <tr><td>¿Por qué Newton y no solo bisección?</td><td>Newton converge cuadráticamente: 3–4 iteraciones frente a ~50 de bisección para 10⁻¹⁴. La bisección queda como respaldo para garantizar convergencia.</td><td class="J">Joan</td></tr>
+  <tr><td>¿Cómo saben que el corte E<sub>max</sub> = μ + 40 k<sub>B</sub>T es suficiente?</td><td>La cola vale e<sup>−40</sup> ~ 4×10⁻¹⁸, y entre 30 y 60 k<sub>B</sub>T la energía cambia menos de 10⁻¹³.</td><td class="J">Joan</td></tr>
+  <tr><td>¿Qué error tiene la derivada?</td><td>Diferencias centrales: O(h²) ~ (h²/6)U‴. Con h ~ 0.0025 el error relativo en C<sub>V</sub> es ~10⁻⁵. La convergencia de γ con h lo confirma.</td><td class="G">Jorge</td></tr>
+  <tr><td>¿Por qué el ajuste lineal puro da γ 0.5 % bajo?</td><td>Porque C<sub>V</sub> tiene una corrección −(3π⁴/20)t³ que a t = 0.05 ya vale 0.7 %. Incluir el término t³ en el ajuste elimina el sesgo.</td><td class="G">Jorge</td></tr>
+  <tr><td>¿Por qué el γ del cobre difiere del experimental?</td><td>El modelo ignora el potencial periódico de la red y la interacción electrón-fonón. Ambas se resumen en una masa efectiva m*/m ~ 1.38.</td><td class="G">Jorge</td></tr>
+  <tr><td>¿Y la contribución de la red?</td><td>No es parte del enunciado. Va como T³ (Debye) a baja T y tiende a 3R a alta T. Por eso a pocos kelvin la contribución electrónica domina: C/T = γ + βT².</td><td class="S">Sebastián</td></tr>
+</table>
+
+</body>
+</html>
