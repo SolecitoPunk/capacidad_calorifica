@@ -53,8 +53,10 @@ el script convierte γ a mJ/(mol K²) y lo compara con el valor experimental.
 
 ## Presentación
 
-`presentacion/presentacion_sommerfeld.pptx`: 16 diapositivas en 16:9, con el guion de cada
-orador en las notas. Para incluir las animaciones, primero generen los GIF y luego vuelvan a
+`presentacion/presentacion_sommerfeld.pptx`: 16 diapositivas en 16:9, estilo "limones"
+(paleta y fuentes inspiradas en la plantilla Mantis & Lemon: IM Fell English y Arimo, de Google Fonts),
+con ecuaciones editables de PowerPoint y el guion de cada orador en las notas.
+`presentacion_sommerfeld_azul.pptx` es la versión anterior, en azul. Para incluir las animaciones, primero generen los GIF y luego vuelvan a
 construir el archivo (solo usa la biblioteca estándar de Python):
 
 ```bash
