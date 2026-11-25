@@ -1,0 +1,115 @@
+[
+ {
+  "cabecera": "Diapositiva 1 · Portada · Sebastián · 0:00–0:45",
+  "parrafos": [
+   "Sebastián: Buenos días, profesor y compañeros. Somos Sebastián Sánchez, Joan Tovar y Jorge Garzón. Hoy les presentamos nuestro proyecto de simulación: la capacidad calorífica electrónica de un metal a temperatura finita, usando el modelo de Sommerfeld. Yo voy a introducir la física del problema, Joan explicará cómo calculamos el potencial químico y la energía interna, y Jorge mostrará la capacidad calorífica y lo que obtenemos al aplicarlo a un metal real."
+  ]
+ },
+ {
+  "cabecera": "Diapositiva 2 · Motivación · Sebastián · 0:45–2:15",
+  "parrafos": [
+   "Sebastián: Empecemos con una pregunta. En un metal como el cobre cada átomo aporta un electrón libre. Si esos electrones se comportaran como un gas ideal clásico, cada uno aportaría tres medios de k_B a la capacidad calorífica, por el teorema de equipartición. Eso sería tan grande como la contribución de la red cristalina.",
+   "Sin embargo, los experimentos muestran que la contribución de los electrones a temperatura ambiente es apenas del orden del uno por ciento de ese valor. La física clásica no puede explicar esta diferencia.",
+   "La respuesta la dio Arnold Sommerfeld en 1928. Los electrones son fermiones y obedecen el principio de exclusión de Pauli. Solo los electrones cercanos a la energía de Fermi, en una franja de ancho del orden de k_BT, pueden absorber energía térmica. El resultado es una capacidad calorífica que crece linealmente con la temperatura: C_V = γT. Nuestro proyecto comprueba esto numéricamente, sin usar la aproximación analítica."
+  ]
+ },
+ {
+  "cabecera": "Diapositiva 3 · Objetivos · Sebastián · 2:15–3:00",
+  "parrafos": [
+   "Sebastián: Nuestro objetivo general es simular la contribución electrónica a la capacidad calorífica integrando la densidad de estados con la distribución de Fermi-Dirac. Para eso tenemos dos objetivos específicos. El primero es calcular la energía interna térmica integrando numéricamente el producto de la densidad de estados, la energía y la distribución de Fermi-Dirac. El segundo es obtener la capacidad calorífica por derivación numérica y compararla con la aproximación lineal de Sommerfeld."
+  ]
+ },
+ {
+  "cabecera": "Diapositiva 4 · Modelo físico · Sebastián · 3:00–4:45",
+  "parrafos": [
+   "Sebastián: El modelo tiene dos ingredientes. El primero es la densidad de estados de un gas de electrones libres en tres dimensiones, que crece como la raíz cuadrada de la energía. Aquí la vemos en la animación: a temperatura cero todos los estados están llenos hasta la energía de Fermi, que es la zona sombreada.",
+   "El segundo ingrediente es la distribución de Fermi-Dirac, que da la probabilidad de que un estado de energía E esté ocupado. A temperatura cero es un escalón perfecto. Al subir la temperatura, el escalón se suaviza en una franja de ancho k_BT alrededor del potencial químico μ. (Señalar la gráfica 2.) Fíjense en que μ depende de la temperatura: no podemos dejarlo fijo, porque el número de electrones tiene que conservarse. Ese es el primer problema numérico, y Joan lo va a explicar.",
+   "Con estos dos ingredientes, el número de electrones es la integral de g por f, y la energía interna es la integral de E por g por f."
+  ]
+ },
+ {
+  "cabecera": "Diapositiva 5 · Unidades y predicción de Sommerfeld · Sebastián · 4:45–6:30",
+  "parrafos": [
+   "Sebastián: Para que el problema sirva para cualquier metal trabajamos en unidades adimensionales. Medimos la energía en unidades de la energía de Fermi y la temperatura en unidades de la temperatura de Fermi. Normalizamos la densidad de estados a tres medios de raíz de épsilon, de modo que a temperatura cero hay exactamente un electrón por partícula y la energía interna es tres quintos.",
+   "La expansión de Sommerfeld predice tres cosas que vamos a contrastar: el potencial químico baja como uno menos pi cuadrado sobre doce por t al cuadrado; la energía térmica crece como pi cuadrado sobre cuatro por t al cuadrado; y la capacidad calorífica es lineal, pi cuadrado medios por t. Es decir, en estas unidades esperamos γ = π²/2, aproximadamente 4.935.",
+   "Para un metal típico, la temperatura de Fermi es de decenas de miles de kelvin, así que a temperatura ambiente t es del orden de milésimas. Joan, ¿cómo resolvimos esto en el computador?"
+  ]
+ },
+ {
+  "cabecera": "Diapositiva 6 · Esquema del algoritmo · Joan · 6:30–7:30",
+  "parrafos": [
+   "Joan: Gracias, Sebastián. El programa sigue este esquema. Tomamos una rejilla de 200 temperaturas entre t = 0.01 y t = 0.5. Para cada temperatura hacemos dos cosas: primero encontramos el potencial químico que conserva el número de electrones, y con ese μ integramos la energía interna. Cuando tenemos U en toda la rejilla, Jorge la deriva para obtener la capacidad calorífica. Todo está en Python, con NumPy, SciPy y Matplotlib, en un repositorio de GitHub que compartimos los tres."
+  ]
+ },
+ {
+  "cabecera": "Diapositiva 7 · Ecuación de ligadura · Joan · 7:30–9:15",
+  "parrafos": [
+   "Joan: La ecuación de ligadura dice que la integral de g por f tiene que dar uno para cualquier temperatura. La incógnita es μ, y la escribimos como un problema de raíces: F(μ) = N(μ) − 1 = 0.",
+   "Implementamos el método de Newton-Raphson. La ventaja es que la derivada de F también se calcula con una integral: es g multiplicada por menos la derivada de Fermi-Dirac, que es un pico centrado en μ. Esa derivada siempre es positiva, así que N crece con μ y la raíz es única.",
+   "Para que el método no falle, le pusimos una salvaguarda. Mantenemos un intervalo que siempre contiene la raíz, y si un paso de Newton se sale de él, hacemos un paso de bisección. Además usamos continuación: el μ de una temperatura es la semilla de la siguiente. Con eso el método converge en tres o cuatro iteraciones por temperatura. Para verificar, comparamos con el método de Brent de SciPy, y la diferencia máxima es de 1.4×10⁻¹⁴."
+  ]
+ },
+ {
+  "cabecera": "Diapositiva 8 · Resultado μ(T) · Joan · 9:15–10:30",
+  "parrafos": [
+   "Joan: Este es el resultado. La curva azul es nuestro μ numérico y la roja punteada es la predicción de Sommerfeld. A bajas temperaturas coinciden; por ejemplo, en t = 0.01 obtenemos 0.99991774 y la fórmula da 0.99991775: coinciden hasta la séptima cifra decimal. Al subir la temperatura las curvas se separan, porque la fórmula es solo el primer término de una serie. En t = 1 el potencial químico ya es ligeramente negativo, −0.021, que es el comportamiento de un gas clásico.",
+   "Lo más importante es que el número de electrones se conserva: la desviación máxima de N respecto a uno, en toda la rejilla, es de 10⁻¹⁴, prácticamente la precisión de la máquina."
+  ]
+ },
+ {
+  "cabecera": "Diapositiva 9 · Integración adaptativa · Joan · 10:30–12:00",
+  "parrafos": [
+   "Joan: Con μ conocido, calculamos la energía interna. El reto es que, a baja temperatura, Fermi-Dirac cambia de uno a cero en una franja muy angosta. Si usáramos una regla de paso fijo, como Simpson, necesitaríamos muchísimos puntos.",
+   "Por eso usamos cuadratura adaptativa de Gauss-Kronrod, de la librería QUADPACK que viene en SciPy. El método estima el error en cada subintervalo y solo divide donde hace falta. En la animación se ve: al bajar la temperatura, las líneas rojas, que son los bordes de los subintervalos, se amontonan alrededor de μ, y con el mismo número de evaluaciones Simpson comete un error mucho mayor. Le indicamos que hay un punto delicado en E = μ para que refine ahí, y le pedimos tolerancia relativa de 10⁻¹³.",
+   "La integral va en principio hasta infinito, pero la cola de Fermi-Dirac decae como e^−(E−μ)/k_BT. Cortamos en μ más 40 k_BT, donde la cola vale unos 10⁻¹⁸. Comprobamos que si movemos el corte a 30 o a 60 k_BT la energía cambia menos de 10⁻¹³."
+  ]
+ },
+ {
+  "cabecera": "Diapositiva 10 · Energía térmica · Joan · 12:00–13:00",
+  "parrafos": [
+   "Joan: Aquí está la energía térmica, es decir, la energía interna menos su valor a temperatura cero, tres quintos. Crece como t al cuadrado, como predice Sommerfeld. Al ajustar a baja temperatura obtenemos un coeficiente de 2.461, frente a pi cuadrado sobre cuatro, 2.467. La diferencia de 0.3 % viene de la corrección de orden t⁴, que el ajuste a una parábola pura no incluye; es el mismo efecto que Jorge va a corregir en el ajuste de γ. Con esta curva ya tenemos todo lo necesario para la capacidad calorífica. Jorge, sigue tú."
+  ]
+ },
+ {
+  "cabecera": "Diapositiva 11 · Diferenciación numérica · Jorge · 13:00–14:15",
+  "parrafos": [
+   "Jorge: Gracias, Joan. La capacidad calorífica es la derivada de la energía interna respecto a la temperatura. Como tenemos U en una rejilla, usamos diferencias centrales: U en T más h, menos U en T menos h, dividido entre 2h. El error de esta fórmula es proporcional a h al cuadrado. En los extremos de la rejilla no hay vecino a ambos lados, así que usamos una fórmula de un solo lado, también de segundo orden.",
+   "Un punto importante: derivar amplifica el ruido. Un error de 10⁻⁶ en U, que parece pequeño, al dividir entre 2h = 0.005 se convierte en un error de casi 0.5 % en C_V a la temperatura más baja. Por eso fue necesaria la alta precisión de la integración que explicó Joan."
+  ]
+ },
+ {
+  "cabecera": "Diapositiva 12 · C_V(T) frente a Sommerfeld · Jorge · 14:15–15:45",
+  "parrafos": [
+   "Jorge: Este es el resultado principal. La curva azul es la capacidad calorífica numérica y la roja es la recta de Sommerfeld. A bajas temperaturas son prácticamente iguales: el comportamiento es lineal.",
+   "A la derecha está el cociente entre las dos. En t = 0.1 la simulación da el 96.7 % del valor lineal; en t = 0.3, el 71 %; y en t = 0.5, el 51 %. Esto muestra hasta dónde vale la aproximación lineal. Si agregamos el siguiente término de la expansión, menos 3π⁴/20 por t al cubo, la curva magenta, el acuerdo se extiende hasta t ~ 0.2. Más allá, esa curva se dobla hacia abajo y se vuelve negativa cerca de t = 0.6: la expansión de Sommerfeld es una serie en potencias de t y solo sirve a baja temperatura. El cálculo numérico no tiene esa limitación.",
+   "A temperaturas del orden de la temperatura de Fermi, la capacidad calorífica se acerca al valor clásico de tres medios. Es decir, el mismo programa reproduce los dos límites: el cuántico a baja temperatura y el clásico a alta temperatura."
+  ]
+ },
+ {
+  "cabecera": "Diapositiva 13 · Extracción de γ · Jorge · 15:45–17:00",
+  "parrafos": [
+   "Jorge: Para extraer el coeficiente lineal γ hicimos un ajuste por mínimos cuadrados con los puntos de t menor o igual a 0.05. Primero ajustamos una recta pura que pasa por el origen y obtuvimos 4.912, que es medio por ciento menor que el valor teórico. Ese error no viene de la derivada, sino del modelo de ajuste: incluso a t = 0.05 la corrección cúbica ya pesa un poco.",
+   "Cuando ajustamos γt más δt³, obtenemos γ = 4.93493 frente a π²/2 = 4.93480, un error de tres milésimas de por ciento. El coeficiente cúbico sale −15.0, cercano al teórico de −14.6. También comprobamos la convergencia: al pasar de 50 a 400 puntos en la rejilla, γ se estabiliza en la cuarta cifra decimal."
+  ]
+ },
+ {
+  "cabecera": "Diapositiva 14 · Aplicación al cobre · Jorge · 17:00–18:30",
+  "parrafos": [
+   "Jorge: Ahora llevemos esto a un metal real. El cobre tiene una energía de Fermi de unos 7 eV, que corresponde a una temperatura de Fermi de unos 81 000 kelvin. A temperatura ambiente, t es apenas 0.0037, así que estamos en el régimen lineal.",
+   "Al pasar nuestro γ a unidades físicas obtenemos 0.505 milijoules por mol por kelvin al cuadrado. El valor medido en el cobre es 0.695. La diferencia de un 38 % se interpreta como una masa efectiva de los electrones: el modelo de electrones libres no incluye la red cristalina ni la interacción con los fonones, y esos efectos hacen que los electrones se comporten como si pesaran 1.38 veces más.",
+   "A 300 K la contribución electrónica es de unos 0.15 J/(mol K), frente a 25 de la red, y apenas el 1.2 % de los 12.5 J/(mol K) que predecía la física clásica. Esa es la diferencia de la que hablaba Sebastián al principio. A temperaturas muy bajas, en cambio, la red decae como T³ y los electrones dominan."
+  ]
+ },
+ {
+  "cabecera": "Diapositiva 15 · Conclusiones · Jorge · 18:30–19:30",
+  "parrafos": [
+   "Jorge: Para concluir: primero, resolvimos la ecuación de ligadura con un Newton-Raphson salvaguardado que conserva el número de electrones a precisión de máquina en tres o cuatro iteraciones. Segundo, la cuadratura adaptativa nos permitió integrar el escalón de Fermi-Dirac con precisión de 10⁻¹³, suficiente para derivar sin amplificar errores. Tercero, la capacidad calorífica numérica es lineal a baja temperatura, y el γ que extraemos coincide con π²/2 dentro de 0.003 %. Cuarto, el mismo cálculo muestra dónde deja de valer Sommerfeld y cómo se recupera el límite clásico."
+  ]
+ },
+ {
+  "cabecera": "Diapositiva 16 · Cierre · Sebastián · 19:30–20:00",
+  "parrafos": [
+   "Sebastián: En resumen, con un modelo sencillo y tres métodos numéricos bien controlados explicamos por qué los electrones de un metal casi no contribuyen al calor específico. El código está en nuestro repositorio de GitHub. Muchas gracias; con gusto respondemos sus preguntas."
+  ]
+ }
+]

@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Capacidad calorífica electrónica a T finita · Sommerfeld</title>
+<!--
+  Presentación animada (estilo "video de divulgación") – Sebastián Sánchez, Joan Tovar, Jorge Garzón
+  Archivo autocontenido: no necesita internet ni instalar nada. Ábranlo con Chrome, Edge o Firefox.
+  Toda la física (μ(T) por Newton-Raphson, cuadratura adaptativa de Gauss-Kronrod, C_V por
+  diferencias centrales y ajuste de γ) se calcula EN VIVO en JavaScript al abrir la página.
+
+  Teclas:  → / espacio / clic  avanzar      ←  retroceder      Inicio / Fin
+           P  ventana del presentador (notas, cronómetro)      N  notas sobre la diapositiva
+           F  pantalla completa      T  mostrar/ocultar cronómetro
+  URL:     presentacion_animada.html#7.3  abre la diapositiva 7 en el paso 3
+-->
+<style>
+:root{--bg:#12141a;--fg:#ECE9E1;--blue:#58C4DD;--yellow:#FFE14D;--teal:#5CD0B3;--red:#FC6255;
+      --green:#83C167;--gold:#F0AC5F;--purple:#B189C6;--grey:#8b909a;}
+html,body{margin:0;height:100%;background:#000;overflow:hidden}
+#stage{position:absolute;left:50%;top:50%;width:1920px;height:1080px;transform-origin:50% 50%;
+  background:radial-gradient(ellipse at 50% 35%,#1d212c 0%,#12141a 70%,#0d0f13 100%);
+  color:var(--fg);font-family:"CMU Serif","Latin Modern Roman","Computer Modern Serif","Cambria",Georgia,serif;
+  overflow:hidden;user-select:none}
+.slide{position:absolute;inset:0}
+.abs{position:absolute}
+math{font-family:"Latin Modern Math","STIX Two Math","Cambria Math","DejaVu Serif","Noto Serif",math,serif}
+[data-step]{opacity:0;transition:opacity .7s ease,transform .7s ease,clip-path 1.3s cubic-bezier(.65,0,.35,1)}
+[data-step].fade{transform:translateY(22px)}
+[data-step].on{opacity:1;transform:none}
+.write{clip-path:inset(-40% 100% -40% 0)}
+.write.on{clip-path:inset(-40% -8% -40% -8%)}
+.noanim,.noanim *{transition:none!important}
+.part{font-size:22px;letter-spacing:.32em;text-transform:uppercase;font-family:Arial,Helvetica,sans-serif}
+.ttl{font-size:58px}
+.badge{font-family:Arial,Helvetica,sans-serif;font-size:22px;padding:10px 22px;border-radius:30px;border:2px solid;white-space:nowrap}
+.y{color:var(--yellow)}.t{color:var(--teal)}.b{color:var(--blue)}.r{color:var(--red)}.g{color:var(--gold)}.p{color:var(--purple)}.gr{color:var(--grey)}
+.txt{font-size:34px;line-height:1.35}
+.small{font-size:26px;line-height:1.35;color:#c9c6bd}
+.card{border:2px solid #3a4152;border-radius:18px;padding:26px 30px;background:rgba(255,255,255,.03)}
+.glow{padding:10px 30px;border:2px solid var(--yellow);border-radius:14px;box-shadow:0 0 34px rgba(255,225,77,.35)}
+.node{border:3px solid;border-radius:20px;text-align:center;display:flex;flex-direction:column;justify-content:center;background:rgba(0,0,0,.25)}
+.node .h{font-size:36px;font-style:italic}.node .s{font-size:24px;color:#c9c6bd;margin-top:10px;font-family:Arial,Helvetica,sans-serif}
+.read{font-family:"Consolas","DejaVu Sans Mono",monospace;font-size:26px;line-height:1.5;background:rgba(0,0,0,.35);border:1px solid #2f3544;border-radius:12px;padding:14px 22px}
+table.tb{border-collapse:collapse;font-size:26px;font-family:"Consolas","DejaVu Sans Mono",monospace}
+table.tb td,table.tb th{padding:6px 18px;border-bottom:1px solid #2f3544;text-align:right}
+table.tb th{color:var(--grey);font-weight:normal}
+.plot text{font-family:"CMU Serif","Latin Modern Roman",Georgia,serif;fill:var(--fg)}
+.plot .ax{stroke:#d9d6ce;stroke-width:2.5}
+.plot .tk{stroke:#d9d6ce;stroke-width:2}
+.plot .grid{stroke:#ffffff;stroke-opacity:.07;stroke-width:1.5}
+#hud .num{position:absolute;right:46px;bottom:26px;font-size:22px;color:var(--grey);font-family:Arial,sans-serif}
+#bar{position:absolute;left:0;bottom:0;height:6px;transition:width .5s,background .5s}
+#hint{position:absolute;left:46px;bottom:22px;font:20px Arial,sans-serif;color:var(--grey);transition:opacity 1s}
+#timer{position:absolute;right:46px;top:120px;font:26px "Consolas",monospace;color:var(--grey);display:none}
+#notas{position:absolute;left:60px;right:60px;bottom:60px;max-height:420px;overflow:auto;display:none;background:rgba(0,0,0,.86);
+  border:1px solid #444;border-radius:14px;padding:20px 28px;font:24px/1.45 Arial,sans-serif;color:#eee;z-index:9}
+#carga{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:40px;color:var(--grey)}
+#err{position:fixed;left:10px;top:10px;right:10px;background:#600;color:#fff;font:16px monospace;padding:10px;display:none;z-index:99;white-space:pre-wrap}
+/* ventana del presentador */
+body.pres{background:#111;color:#eee;font:22px/1.5 Arial,sans-serif;overflow:auto}
+body.pres #stage{display:none}
+#pres{padding:24px 34px}
+#pres .top{display:flex;justify-content:space-between;align-items:baseline}
+#pres .clock{font:64px Consolas,monospace}
+#pres .meta{color:#aaa}
+#pres .who{font-size:30px;font-weight:bold}
+#pres .nt p{margin:10px 0}
+#pres button{font-size:22px;padding:10px 26px;margin-right:10px}
+</style>
+</head>
+<body>
+<div id="err"></div>
+<div id="stage">
+  <div id="carga">Calculando μ(T), U(T) y C<sub>V</sub>(T)…</div>
+  <div id="hud"><div id="bar"></div><div class="num" id="num"></div><div id="timer"></div>
+    <div id="hint">→ / espacio: avanzar · ←: retroceder · P: presentador · N: notas · F: pantalla completa</div>
+    <div id="notas"></div></div>
+</div>
+<script>
+"use strict";
+window.onerror=(m,s,l,c,e)=>{const d=document.getElementById('err');d.style.display='block';d.textContent+='Error: '+m+' (línea '+l+')\n';};
+const NOTAS=[{"cabecera": "Diapositiva 1 · Portada · Sebastián · 0:00–0:45", "parrafos": ["Sebastián: Buenos días, profesor y compañeros. Somos Sebastián Sánchez, Joan Tovar y Jorge Garzón. Hoy les presentamos nuestro proyecto de simulación: la capacidad calorífica electrónica de un metal a temperatura finita, usando el modelo de Sommerfeld. Yo voy a introducir la física del problema, Joan explicará cómo calculamos el potencial químico y la energía interna, y Jorge mostrará la capacidad calorífica y lo que obtenemos al aplicarlo a un metal real."]}, {"cabecera": "Diapositiva 2 · Motivación · Sebastián · 0:45–2:15", "parrafos": ["Sebastián: Empecemos con una pregunta. En un metal como el cobre cada átomo aporta un electrón libre. Si esos electrones se comportaran como un gas ideal clásico, cada uno aportaría tres medios de k_B a la capacidad calorífica, por el teorema de equipartición. Eso sería tan grande como la contribución de la red cristalina.", "Sin embargo, los experimentos muestran que la contribución de los electrones a temperatura ambiente es apenas del orden del uno por ciento de ese valor. La física clásica no puede explicar esta diferencia.", "La respuesta la dio Arnold Sommerfeld en 1928. Los electrones son fermiones y obedecen el principio de exclusión de Pauli. Solo los electrones cercanos a la energía de Fermi, en una franja de ancho del orden de k_BT, pueden absorber energía térmica. El resultado es una capacidad calorífica que crece linealmente con la temperatura: C_V = γT. Nuestro proyecto comprueba esto numéricamente, sin usar la aproximación analítica."]}, {"cabecera": "Diapositiva 3 · Objetivos · Sebastián · 2:15–3:00", "parrafos": ["Sebastián: Nuestro objetivo general es simular la contribución electrónica a la capacidad calorífica integrando la densidad de estados con la distribución de Fermi-Dirac. Para eso tenemos dos objetivos específicos. El primero es calcular la energía interna térmica integrando numéricamente el producto de la densidad de estados, la energía y la distribución de Fermi-Dirac. El segundo es obtener la capacidad calorífica por derivación numérica y compararla con la aproximación lineal de Sommerfeld."]}, {"cabecera": "Diapositiva 4 · Modelo físico · Sebastián · 3:00–4:45", "parrafos": ["Sebastián: El modelo tiene dos ingredientes. El primero es la densidad de estados de un gas de electrones libres en tres dimensiones, que crece como la raíz cuadrada de la energía. Aquí la vemos en la animación: a temperatura cero todos los estados están llenos hasta la energía de Fermi, que es la zona sombreada.", "El segundo ingrediente es la distribución de Fermi-Dirac, que da la probabilidad de que un estado de energía E esté ocupado. A temperatura cero es un escalón perfecto. Al subir la temperatura, el escalón se suaviza en una franja de ancho k_BT alrededor del potencial químico μ. (Señalar la gráfica 2.) Fíjense en que μ depende de la temperatura: no podemos dejarlo fijo, porque el número de electrones tiene que conservarse. Ese es el primer problema numérico, y Joan lo va a explicar.", "Con estos dos ingredientes, el número de electrones es la integral de g por f, y la energía interna es la integral de E por g por f."]}, {"cabecera": "Diapositiva 5 · Unidades y predicción de Sommerfeld · Sebastián · 4:45–6:30", "parrafos": ["Sebastián: Para que el problema sirva para cualquier metal trabajamos en unidades adimensionales. Medimos la energía en unidades de la energía de Fermi y la temperatura en unidades de la temperatura de Fermi. Normalizamos la densidad de estados a tres medios de raíz de épsilon, de modo que a temperatura cero hay exactamente un electrón por partícula y la energía interna es tres quintos.", "La expansión de Sommerfeld predice tres cosas que vamos a contrastar: el potencial químico baja como uno menos pi cuadrado sobre doce por t al cuadrado; la energía térmica crece como pi cuadrado sobre cuatro por t al cuadrado; y la capacidad calorífica es lineal, pi cuadrado medios por t. Es decir, en estas unidades esperamos γ = π²/2, aproximadamente 4.935.", "Para un metal típico, la temperatura de Fermi es de decenas de miles de kelvin, así que a temperatura ambiente t es del orden de milésimas. Joan, ¿cómo resolvimos esto en el computador?"]}, {"cabecera": "Diapositiva 6 · Esquema del algoritmo · Joan · 6:30–7:30", "parrafos": ["Joan: Gracias, Sebastián. El programa sigue este esquema. Tomamos una rejilla de 200 temperaturas entre t = 0.01 y t = 0.5. Para cada temperatura hacemos dos cosas: primero encontramos el potencial químico que conserva el número de electrones, y con ese μ integramos la energía interna. Cuando tenemos U en toda la rejilla, Jorge la deriva para obtener la capacidad calorífica. Todo está en Python, con NumPy, SciPy y Matplotlib, en un repositorio de GitHub que compartimos los tres."]}, {"cabecera": "Diapositiva 7 · Ecuación de ligadura · Joan · 7:30–9:15", "parrafos": ["Joan: La ecuación de ligadura dice que la integral de g por f tiene que dar uno para cualquier temperatura. La incógnita es μ, y la escribimos como un problema de raíces: F(μ) = N(μ) − 1 = 0.", "Implementamos el método de Newton-Raphson. La ventaja es que la derivada de F también se calcula con una integral: es g multiplicada por menos la derivada de Fermi-Dirac, que es un pico centrado en μ. Esa derivada siempre es positiva, así que N crece con μ y la raíz es única.", "Para que el método no falle, le pusimos una salvaguarda. Mantenemos un intervalo que siempre contiene la raíz, y si un paso de Newton se sale de él, hacemos un paso de bisección. Además usamos continuación: el μ de una temperatura es la semilla de la siguiente. Con eso el método converge en tres o cuatro iteraciones por temperatura. Para verificar, comparamos con el método de Brent de SciPy, y la diferencia máxima es de 1.4×10⁻¹⁴."]}, {"cabecera": "Diapositiva 8 · Resultado μ(T) · Joan · 9:15–10:30", "parrafos": ["Joan: Este es el resultado. La curva azul es nuestro μ numérico y la roja punteada es la predicción de Sommerfeld. A bajas temperaturas coinciden; por ejemplo, en t = 0.01 obtenemos 0.99991774 y la fórmula da 0.99991775: coinciden hasta la séptima cifra decimal. Al subir la temperatura las curvas se separan, porque la fórmula es solo el primer término de una serie. En t = 1 el potencial químico ya es ligeramente negativo, −0.021, que es el comportamiento de un gas clásico.", "Lo más importante es que el número de electrones se conserva: la desviación máxima de N respecto a uno, en toda la rejilla, es de 10⁻¹⁴, prácticamente la precisión de la máquina."]}, {"cabecera": "Diapositiva 9 · Integración adaptativa · Joan · 10:30–12:00", "parrafos": ["Joan: Con μ conocido, calculamos la energía interna. El reto es que, a baja temperatura, Fermi-Dirac cambia de uno a cero en una franja muy angosta. Si usáramos una regla de paso fijo, como Simpson, necesitaríamos muchísimos puntos.", "Por eso usamos cuadratura adaptativa de Gauss-Kronrod, de la librería QUADPACK que viene en SciPy. El método estima el error en cada subintervalo y solo divide donde hace falta. En la animación se ve: al bajar la temperatura, las líneas rojas, que son los bordes de los subintervalos, se amontonan alrededor de μ, y con el mismo número de evaluaciones Simpson comete un error mucho mayor. Le indicamos que hay un punto delicado en E = μ para que refine ahí, y le pedimos tolerancia relativa de 10⁻¹³.", "La integral va en principio hasta infinito, pero la cola de Fermi-Dirac decae como e^−(E−μ)/k_BT. Cortamos en μ más 40 k_BT, donde la cola vale unos 10⁻¹⁸. Comprobamos que si movemos el corte a 30 o a 60 k_BT la energía cambia menos de 10⁻¹³."]}, {"cabecera": "Diapositiva 10 · Energía térmica · Joan · 12:00–13:00", "parrafos": ["Joan: Aquí está la energía térmica, es decir, la energía interna menos su valor a temperatura cero, tres quintos. Crece como t al cuadrado, como predice Sommerfeld. Al ajustar a baja temperatura obtenemos un coeficiente de 2.461, frente a pi cuadrado sobre cuatro, 2.467. La diferencia de 0.3 % viene de la corrección de orden t⁴, que el ajuste a una parábola pura no incluye; es el mismo efecto que Jorge va a corregir en el ajuste de γ. Con esta curva ya tenemos todo lo necesario para la capacidad calorífica. Jorge, sigue tú."]}, {"cabecera": "Diapositiva 11 · Diferenciación numérica · Jorge · 13:00–14:15", "parrafos": ["Jorge: Gracias, Joan. La capacidad calorífica es la derivada de la energía interna respecto a la temperatura. Como tenemos U en una rejilla, usamos diferencias centrales: U en T más h, menos U en T menos h, dividido entre 2h. El error de esta fórmula es proporcional a h al cuadrado. En los extremos de la rejilla no hay vecino a ambos lados, así que usamos una fórmula de un solo lado, también de segundo orden.", "Un punto importante: derivar amplifica el ruido. Un error de 10⁻⁶ en U, que parece pequeño, al dividir entre 2h = 0.005 se convierte en un error de casi 0.5 % en C_V a la temperatura más baja. Por eso fue necesaria la alta precisión de la integración que explicó Joan."]}, {"cabecera": "Diapositiva 12 · C_V(T) frente a Sommerfeld · Jorge · 14:15–15:45", "parrafos": ["Jorge: Este es el resultado principal. La curva azul es la capacidad calorífica numérica y la roja es la recta de Sommerfeld. A bajas temperaturas son prácticamente iguales: el comportamiento es lineal.", "A la derecha está el cociente entre las dos. En t = 0.1 la simulación da el 96.7 % del valor lineal; en t = 0.3, el 71 %; y en t = 0.5, el 51 %. Esto muestra hasta dónde vale la aproximación lineal. Si agregamos el siguiente término de la expansión, menos 3π⁴/20 por t al cubo, la curva magenta, el acuerdo se extiende hasta t ~ 0.2. Más allá, esa curva se dobla hacia abajo y se vuelve negativa cerca de t = 0.6: la expansión de Sommerfeld es una serie en potencias de t y solo sirve a baja temperatura. El cálculo numérico no tiene esa limitación.", "A temperaturas del orden de la temperatura de Fermi, la capacidad calorífica se acerca al valor clásico de tres medios. Es decir, el mismo programa reproduce los dos límites: el cuántico a baja temperatura y el clásico a alta temperatura."]}, {"cabecera": "Diapositiva 13 · Extracción de γ · Jorge · 15:45–17:00", "parrafos": ["Jorge: Para extraer el coeficiente lineal γ hicimos un ajuste por mínimos cuadrados con los puntos de t menor o igual a 0.05. Primero ajustamos una recta pura que pasa por el origen y obtuvimos 4.912, que es medio por ciento menor que el valor teórico. Ese error no viene de la derivada, sino del modelo de ajuste: incluso a t = 0.05 la corrección cúbica ya pesa un poco.", "Cuando ajustamos γt más δt³, obtenemos γ = 4.93493 frente a π²/2 = 4.93480, un error de tres milésimas de por ciento. El coeficiente cúbico sale −15.0, cercano al teórico de −14.6. También comprobamos la convergencia: al pasar de 50 a 400 puntos en la rejilla, γ se estabiliza en la cuarta cifra decimal.", "(Gráfica animada: si C_V = γt + δt³, entonces C_V/t = γ + δt² es una recta en función de t². Donde la recta corta el eje vertical se lee γ directamente.)"]}, {"cabecera": "Diapositiva 14 · Aplicación al cobre · Jorge · 17:00–18:30", "parrafos": ["Jorge: Ahora llevemos esto a un metal real. El cobre tiene una energía de Fermi de unos 7 eV, que corresponde a una temperatura de Fermi de unos 81 000 kelvin. A temperatura ambiente, t es apenas 0.0037, así que estamos en el régimen lineal.", "Al pasar nuestro γ a unidades físicas obtenemos 0.505 milijoules por mol por kelvin al cuadrado. El valor medido en el cobre es 0.695. La diferencia de un 38 % se interpreta como una masa efectiva de los electrones: el modelo de electrones libres no incluye la red cristalina ni la interacción con los fonones, y esos efectos hacen que los electrones se comporten como si pesaran 1.38 veces más.", "A 300 K la contribución electrónica es de unos 0.15 J/(mol K), frente a 25 de la red, y apenas el 1.2 % de los 12.5 J/(mol K) que predecía la física clásica. Esa es la diferencia de la que hablaba Sebastián al principio. A temperaturas muy bajas, en cambio, la red decae como T³ y los electrones dominan.", "(Gráfica animada: C/T contra T² es una recta. El corte con el eje es γ y la pendiente es la red. La recta roja usa el γ medido y la azul el γ calculado: la distancia entre los cortes es la masa efectiva.)"]}, {"cabecera": "Diapositiva 15 · Conclusiones · Jorge · 18:30–19:30", "parrafos": ["Jorge: Para concluir: primero, resolvimos la ecuación de ligadura con un Newton-Raphson salvaguardado que conserva el número de electrones a precisión de máquina en tres o cuatro iteraciones. Segundo, la cuadratura adaptativa nos permitió integrar el escalón de Fermi-Dirac con precisión de 10⁻¹³, suficiente para derivar sin amplificar errores. Tercero, la capacidad calorífica numérica es lineal a baja temperatura, y el γ que extraemos coincide con π²/2 dentro de 0.003 %. Cuarto, el mismo cálculo muestra dónde deja de valer Sommerfeld y cómo se recupera el límite clásico."]}, {"cabecera": "Diapositiva 16 · Cierre · Sebastián · 19:30–20:00", "parrafos": ["Sebastián: En resumen, con un modelo sencillo y tres métodos numéricos bien controlados explicamos por qué los electrones de un metal casi no contribuyen al calor específico. El código está en nuestro repositorio de GitHub. Muchas gracias; con gusto respondemos sus preguntas."]}];
+
+/* =====================================================================
+   1. FÍSICA (misma que sommerfeld_cv.py) — unidades: ε=E/E_F, t=T/T_F
+   ===================================================================== */
+const XGK=[0.991455371120812639,0.949107912342758525,0.864864423359769073,0.741531185599394440,
+           0.586087235467691130,0.405845151377397167,0.207784955007898468,0];
+const WGK=[0.022935322010529225,0.063092092629978553,0.104790010322250184,0.140653259715525919,
+           0.169004726639267903,0.190350578064785410,0.204432940075298892,0.209482141084727828];
+const WG=[0.129484966168869693,0.279705391489276668,0.381830050505118945,0.417959183673469388];
+function gk15(f,a,b){const c=.5*(a+b),h=.5*(b-a),fc=f(c);let rk=fc*WGK[7],rg=fc*WG[3];
+  for(let j=0;j<7;j++){const x=h*XGK[j],s=f(c-x)+f(c+x);rk+=WGK[j]*s;if(j%2===1)rg+=WG[(j-1)/2]*s;}
+  return [rk*h,Math.abs((rk-rg)*h)];}
+/* Cuadratura adaptativa: Gauss-Kronrod 7-15 con bisección donde el error estimado es grande */
+function quad(f,a,b,pts,tol,info){tol=tol||1e-14;
+  const ed=[a,...(pts||[]).filter(p=>p>a&&p<b).sort((x,y)=>x-y),b],st=[];
+  for(let i=0;i<ed.length-1;i++)st.push([ed[i],ed[i+1]]);
+  let tot=0,nev=0;
+  while(st.length){const [x0,x1]=st.pop(),[v,e]=gk15(f,x0,x1);nev+=15;
+    if(e<tol*Math.max(1,x1-x0)||x1-x0<1e-12){tot+=v;if(info)info.iv.push(x0,x1);}
+    else{const m=.5*(x0+x1);st.push([x0,m],[m,x1]);}}
+  if(info)info.nev=nev;return tot;}
+const expit=x=>{if(x>=0)return 1/(1+Math.exp(-x));const z=Math.exp(x);return z/(1+z);};
+const g=e=>1.5*Math.sqrt(Math.max(e,0));                 // densidad de estados 3D, ∫_0^1 g = 1
+const fd=(e,t,mu)=>expit(-(e-mu)/t);                     // Fermi-Dirac
+const NSIG=40;
+function integ(h,mu,t,info){const em=Math.max(mu,0)+NSIG*t;return quad(h,0,em,(mu>0&&mu<em)?[mu]:null,1e-14,info);}
+const Nn=(mu,t)=>integ(e=>g(e)*fd(e,t,mu),mu,t);
+const Uu=(mu,t,info)=>integ(e=>e*g(e)*fd(e,t,mu),mu,t,info);
+const dN=(mu,t)=>integ(e=>{const x=(e-mu)/t;return g(e)*expit(x)*expit(-x)/t;},mu,t);
+/* Newton-Raphson con salvaguarda de bisección (ecuación de ligadura N(μ)=1) */
+function newton(t,mu0,hist){let a=-30,b=5,mu=Math.min(Math.max(mu0,a+1e-3),b-1e-3);
+  for(let k=1;k<=100;k++){const F=Nn(mu,t)-1;
+    if(Math.abs(F)<1e-14){if(hist)hist.push({mu,F,d:NaN});return mu;}
+    if(F>0)b=mu;else a=mu;
+    const d=dN(mu,t);let nw=d>0?mu-F/d:.5*(a+b),bis=false;
+    if(!(a<nw&&nw<b)){nw=.5*(a+b);bis=true;}
+    if(hist)hist.push({mu,F,d,next:nw,bis});
+    const st=Math.abs(nw-mu);mu=nw;if(st<1e-12)return mu;}
+  return mu;}
+function serie(t0,t1,n){const S={t:[],mu:[],it:[],N:[],U:[]};let m=1;
+  for(let i=0;i<n;i++){const t=t0+(t1-t0)*i/(n-1),h=[];m=newton(t,m,h);
+    S.t.push(t);S.mu.push(m);S.it.push(h.length);S.N.push(Nn(m,t));S.U.push(Uu(m,t));}
+  const U=S.U,hh=S.t[1]-S.t[0];   // derivada: diferencias centrales O(h²), extremos de 2.º orden
+  S.cv=U.map((_,i)=>i===0?(-3*U[0]+4*U[1]-U[2])/(2*hh):i===n-1?(3*U[n-1]-4*U[n-2]+U[n-3])/(2*hh):(U[i+1]-U[i-1])/(2*hh));
+  S.du=U.map(u=>u-.6);return S;}
+function ajuste(S,tmax){const idx=[];for(let i=1;i<S.t.length-1;i++)if(S.t[i]<=tmax)idx.push(i);
+  let s11=0,s13=0,s33=0,b1=0,b3=0;
+  for(const i of idx){const t=S.t[i],c=S.cv[i];s11+=t*t;s13+=t**4;s33+=t**6;b1+=c*t;b3+=c*t**3;}
+  const det=s11*s33-s13*s13;return {g1:b1/s11,g2:(b1*s33-b3*s13)/det,d2:(s11*b3-s13*b1)/det,idx};}
+function simpson(h,a,b,N){if(N%2===0)N++;const dx=(b-a)/(N-1);let s=h(a)+h(b);
+  for(let i=1;i<N-1;i++)s+=(i%2?4:2)*h(a+i*dx);return s*dx/3;}
+const PI2=Math.PI**2,GTEO=PI2/2,DTEO=-3*Math.PI**4/20;
+const D={};
+function calc(){
+  D.ext=serie(.01,1,200);  D.fit=serie(.01,.5,200);  D.aj=ajuste(D.fit,.05);
+  D.gt=[];D.gm=[];let m=1;
+  for(let i=0;i<260;i++){const t=Math.exp(Math.log(.002)+(Math.log(1.2)-Math.log(.002))*i/259);m=newton(t,m);D.gt.push(t);D.gm.push(m);}
+  D.newton=[];newton(.3,.35,D.newton);
+  D.maxN=Math.max(...D.fit.N.map(x=>Math.abs(x-1)));
+  D.itMed=D.fit.it.reduce((a,b)=>a+b,0)/D.fit.it.length;
+  let s1=0,s2=0;D.fit.t.forEach((t,i)=>{if(t<=.05){s1+=D.fit.du[i]*t*t;s2+=t**4;}});D.a=s1/s2;
+  D.TF=7.0/8.617333262e-5;D.gfis=D.aj.g2*8.314462618/D.TF*1e3;
+}
+function muAt(t){const G=D.gt;if(t<=G[0])return D.gm[0];let lo=0,hi=G.length-1;
+  while(hi-lo>1){const md=(lo+hi)>>1;if(G[md]>t)hi=md;else lo=md;}
+  const q=(Math.log(t)-Math.log(G[lo]))/(Math.log(G[hi])-Math.log(G[lo]));return D.gm[lo]+(D.gm[hi]-D.gm[lo])*q;}
+function interp(xs,ys,x){if(x<=xs[0])return ys[0];if(x>=xs[xs.length-1])return ys[ys.length-1];
+  const h=xs[1]-xs[0],i=Math.min(xs.length-2,Math.floor((x-xs[0])/h)),q=(x-xs[i])/h;return ys[i]+(ys[i+1]-ys[i])*q;}
+const lin=(a,b,n)=>Array.from({length:n},(_,i)=>a+(b-a)*i/(n-1));
+const EG=lin(0,2,401);
+
+/* =====================================================================
+   2. MOTOR DE ANIMACIÓN
+   ===================================================================== */
+const BLUE='#58C4DD',YELLOW='#FFE14D',TEAL='#5CD0B3',RED='#FC6255',GREEN='#83C167',GOLD='#F0AC5F',PURPLE='#B189C6',GREY='#8b909a',FG='#ECE9E1';
+const QUIEN={'Sebastián':TEAL,'Joan':GOLD,'Jorge':BLUE};
+const EIO=p=>p<.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2, EO=p=>1-Math.pow(1-p,3), EBACK=p=>1+2.7*Math.pow(p-1,3)+1.7*Math.pow(p-1,2), ELIN=p=>p;
+let GEN=0,CUR=0,STEP=0,ROOT=null,UID=0;
+function mkA(inst,gen){return{inst,
+  tw(dur,f,delay,ease){delay=delay||0;ease=ease||EIO;if(inst||dur<=0){f(1);return;}f(ease(0));
+    const st=performance.now()+delay;const fr=now=>{if(gen!==GEN)return;if(now<st){requestAnimationFrame(fr);return;}
+      const p=Math.min(1,(now-st)/dur);f(ease(p));if(p<1)requestAnimationFrame(fr);};requestAnimationFrame(fr);},
+  at(delay,f){if(inst||!delay)f();else setTimeout(()=>{if(gen===GEN)f();},delay);},
+  loop(f){const t0=performance.now();const fr=now=>{if(gen!==GEN)return;f((now-t0)/1000);requestAnimationFrame(fr);};
+    f(0);requestAnimationFrame(fr);}};}
+const fmt=(v,d=4)=>(+v.toFixed(d)).toString();
+const lab=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+  .replace(/_\{([^}]*)\}/g,'<tspan baseline-shift="sub" font-size="70%">$1</tspan>')
+  .replace(/\^\{([^}]*)\}/g,'<tspan baseline-shift="super" font-size="70%">$1</tspan>');
+const htm=s=>String(s).replace(/_\{([^}]*)\}/g,'<sub>$1</sub>').replace(/\^\{([^}]*)\}/g,'<sup>$1</sup>');
+const SVGNS='http://www.w3.org/2000/svg';
+function S(tag,at){const e=document.createElementNS(SVGNS,tag);for(const k in at||{})e.setAttribute(k,at[k]);return e;}
+function add(p,tag,at){const e=S(tag,at);p.appendChild(e);return e;}
+function $(root,html,x,y,o){o=o||{};const d=document.createElement('div');d.className='abs '+(o.cls||'');
+  d.style.left=x+'px';d.style.top=y+'px';if(o.w)d.style.width=o.w+'px';if(o.size)d.style.fontSize=o.size+'px';
+  if(o.color)d.style.color=o.color;if(o.align)d.style.textAlign=o.align;if(o.step!=null)d.dataset.step=o.step;
+  if(o.delay)d.style.transitionDelay=o.delay+'ms';if(o.style)d.style.cssText+=';'+o.style;d.innerHTML=html;root.appendChild(d);return d;}
+function eq(root,m,x,y,o){o=Object.assign({size:48},o||{});o.cls='write '+(o.cls||'');return $(root,'<math>'+m+'</math>',x,y,o);}
+/* MathML */
+const mi=s=>`<mi mathvariant="normal" style="font-style:italic">${s}</mi>`,up=s=>`<mi mathvariant="normal">${s}</mi>`,mn=s=>`<mn>${s}</mn>`,mo=s=>`<mo>${s}</mo>`,mt=s=>`<mtext>${s}</mtext>`;
+const R=(...a)=>`<mrow>${a.join('')}</mrow>`,fr=(a,b)=>`<mfrac>${R(a)}${R(b)}</mfrac>`;
+const sb=(a,b)=>`<msub>${R(a)}${R(b)}</msub>`,sp=(a,b)=>`<msup>${R(a)}${R(b)}</msup>`,ss=(a,b,c)=>`<msubsup>${R(a)}${R(b)}${R(c)}</msubsup>`;
+const sq=a=>`<msqrt>${a}</msqrt>`,P=(...a)=>R(mo('('),...a,mo(')'));
+const INT=(lo,hi)=>lo==null?mo('∫'):`<msubsup><mo>∫</mo>${R(lo)}${R(hi)}</msubsup>`;
+const Cl=(c,...a)=>`<mrow style="color:${c}">${a.join('')}</mrow>`;
+const dd=up('d'),kB=sb(mi('k'),up('B')),EF=sb(mi('E'),up('F')),TF=sb(mi('T'),up('F')),CV=sb(mi('C'),up('V'));
+
+/* Gráficas SVG con ejes que crecen y curvas que se dibujan */
+class Plot{
+  constructor(root,o){this.o=o;this.L=o.L??95;this.R=o.R??30;this.T=o.T??30;this.B=o.B??80;this.w=o.w;this.h=o.h;
+    this.xr=o.xr;this.yr=o.yr;this.log=!!o.log;
+    const s=this.svg=S('svg',{width:o.w,height:o.h,viewBox:`0 0 ${o.w} ${o.h}`,class:'abs plot',overflow:'visible'});
+    s.style.left=o.x+'px';s.style.top=o.y+'px';root.appendChild(s);
+    const id='c'+(++UID);this.defs=add(s,'defs');
+    add(add(this.defs,'clipPath',{id}),'rect',{x:this.L,y:this.T-3,width:o.w-this.L-this.R,height:o.h-this.T-this.B+6});
+    this.gA=add(s,'g');this.gD=add(s,'g',{'clip-path':`url(#${id})`});this.gT=add(s,'g');}
+  X(v){return this.L+(v-this.xr[0])/(this.xr[1]-this.xr[0])*(this.w-this.L-this.R);}
+  Y(v){let a=this.yr[0],b=this.yr[1];if(this.log){v=Math.log10(Math.max(v,1e-300));a=Math.log10(a);b=Math.log10(b);}
+    return this.h-this.B-(v-a)/(b-a)*(this.h-this.B-this.T);}
+  axes(A,delay,dur){delay=delay||0;dur=dur||800;const {L,R,T,B,w,h}=this,o=this.o;
+    const xa=add(this.gA,'line',{x1:L,y1:h-B,x2:L,y2:h-B,class:'ax'}),ya=add(this.gA,'line',{x1:L,y1:h-B,x2:L,y2:h-B,class:'ax'});
+    A.tw(dur,p=>{xa.setAttribute('x2',L+p*(w-L-R));ya.setAttribute('y2',h-B-p*(h-B-T));},delay);
+    const tk=add(this.gA,'g');tk.style.opacity=0;
+    for(const v of o.xt||[]){const x=this.X(v);add(tk,'line',{x1:x,x2:x,y1:T,y2:h-B,class:'grid'});add(tk,'line',{x1:x,x2:x,y1:h-B,y2:h-B+9,class:'tk'});
+      const t=add(tk,'text',{x,y:h-B+40,'text-anchor':'middle','font-size':26});t.innerHTML=lab(o.fx?o.fx(v):fmt(v,6));}
+    for(const v of o.yt||[]){const y=this.Y(v);add(tk,'line',{x1:L,x2:w-R,y1:y,y2:y,class:'grid'});add(tk,'line',{x1:L-9,x2:L,y1:y,y2:y,class:'tk'});
+      const t=add(tk,'text',{x:L-16,y:y+9,'text-anchor':'end','font-size':26});
+      t.innerHTML=lab(this.log?'10^{'+Math.round(Math.log10(v))+'}':(o.fy?o.fy(v):fmt(v,6)));}
+    if(o.xl){const t=add(tk,'text',{x:(L+w-R)/2,y:h-8,'text-anchor':'middle','font-size':30,'font-style':'italic'});t.innerHTML=lab(o.xl);}
+    if(o.yl){const cy=(T+h-B)/2,t=add(tk,'text',{x:22,y:cy,'text-anchor':'middle','font-size':30,'font-style':'italic',transform:`rotate(-90 22 ${cy})`});t.innerHTML=lab(o.yl);}
+    A.tw(600,p=>tk.style.opacity=p,delay+dur*.5);}
+  pd(pts){let d='';for(const [a,b] of pts){if(!isFinite(b))continue;d+=(d?'L':'M')+this.X(a).toFixed(1)+','+this.Y(b).toFixed(1);}return d;}
+  _rev(el){const id='r'+(++UID),rc=add(add(this.defs,'clipPath',{id}),'rect',{x:-1e4,y:-1e4,width:0,height:3e4});
+    el.setAttribute('clip-path',`url(#${id})`);return rc;}
+  _obj(g,el,rc){const self=this;return{el,g,
+    draw(A,delay,dur){A.tw(dur||1600,p=>rc.setAttribute('width',p>=1?3e4:1e4+self.L+p*(self.w-self.L-self.R)),delay||0);return this;},
+    show(){rc.setAttribute('width',3e4);return this;},
+    fade(A,to,delay,dur){const f0=+(el.getAttribute('opacity')??1);rc.setAttribute('width',3e4);A.tw(dur||600,p=>el.setAttribute('opacity',f0+(to-f0)*p),delay||0);return this;}};}
+  curve(pts,o){o=o||{};const g=add(this.gD,'g'),el=add(g,'path',{d:this.pd(pts),fill:'none',stroke:o.color||BLUE,'stroke-width':o.width||5,
+      'stroke-linejoin':'round','stroke-linecap':o.dash?'butt':'round','stroke-dasharray':o.dash||'none',opacity:o.op??1});
+    const ob=this._obj(g,el,this._rev(g));ob.set=pts=>el.setAttribute('d',this.pd(pts));return ob;}
+  area(o){o=o||{};const g=add(this.gD,'g'),el=add(g,'path',{d:'',fill:o.color||BLUE,opacity:o.op??.3,stroke:'none'});
+    const ob=this._obj(g,el,this._rev(g));
+    ob.set=(top,bot)=>{if(!top.length){el.setAttribute('d','');return;}bot=bot||top.map(p=>[p[0],this.yr[0]]);
+      el.setAttribute('d',this.pd(top)+'L'+this.pd(bot.slice().reverse()).slice(1)+'Z');};return ob;}
+  line(x1,y1,x2,y2,o){return this.curve([[x1,y1],[x2,y2]],o);}
+  hline(y,o){return this.line(this.xr[0],y,this.xr[1],y,o);}
+  vline(x,o){return this.line(x,this.yr[0],x,this.yr[1],o);}
+  rect(x0,x1,y0,color){const el=add(this.gD,'rect',{x:this.X(x0),width:this.X(x1)-this.X(x0),y:this.Y(y0),height:0,fill:color,rx:4});
+    return{el,set:v=>{el.setAttribute('y',this.Y(v));el.setAttribute('height',Math.max(0,this.Y(y0)-this.Y(v)));}};}
+  dot(x,y,o){o=o||{};const r=o.r||9,el=add(this.gT,'circle',{cx:this.X(x),cy:this.Y(y),r:0,fill:o.color||YELLOW,stroke:o.stroke||'none','stroke-width':3});
+    const self=this;return{el,pop(A,delay){A.tw(500,p=>el.setAttribute('r',Math.max(0,r*p)),delay||0,EBACK);return this;},
+      show(){el.setAttribute('r',r);return this;},move(x,y){el.setAttribute('cx',self.X(x));el.setAttribute('cy',self.Y(y));}};}
+  text(x,y,s,o){o=o||{};const el=add(this.gT,'text',{x:this.X(x)+(o.dx||0),y:this.Y(y)+(o.dy||0),'text-anchor':o.anchor||'start',
+      'font-size':o.size||28,fill:o.color||FG,'font-style':o.italic?'italic':'normal'});el.innerHTML=lab(s);el.setAttribute('opacity',o.hidden?0:1);
+    const self=this;return{el,fade(A,delay,to){to=to??1;A.tw(600,p=>el.setAttribute('opacity',p*to),delay||0);return this;},
+      set(s){el.innerHTML=lab(s);},move(x,y){el.setAttribute('x',self.X(x)+(o.dx||0));el.setAttribute('y',self.Y(y)+(o.dy||0));}};}
+}
+/* Trazos SVG libres (diagramas) */
+function stroke(A,el,delay,dur){el.setAttribute('pathLength',1);el.style.strokeDasharray='1 1';A.tw(dur||900,p=>el.style.strokeDashoffset=1-p,delay||0);}
+
+/* =====================================================================
+   3. ESCENAS (una por diapositiva, mismo orden y tiempos del guion)
+   ===================================================================== */
+const SC=[];const scene=o=>SC.push(o);
+
+// 1 ─ Portada
+scene({who:'Sebastián',time:'0:00–0:45',portada:true,build(r){
+  const p=new Plot(r,{x:0,y:600,w:1920,h:480,xr:[0,2],yr:[-.05,1.2],L:0,R:0,T:0,B:0});
+  const cs=[[.01,BLUE],[.06,TEAL],[.15,YELLOW],[.35,GOLD]].map(([t,c])=>({t,c:p.curve([],{color:c,width:4,op:.45})}));
+  $(r,'Capacidad calorífica electrónica',0,215,{w:1920,align:'center',size:104,cls:'write',step:0});
+  $(r,'a temperatura finita · modelo de Sommerfeld',0,350,{w:1920,align:'center',size:46,cls:'fade gr',step:0,delay:900});
+  eq(r,R(CV,mo('='),mi('γ'),mi('T')),0,440,{w:1920,align:'center',size:84,color:YELLOW,step:0,delay:1400});
+  $(r,'<span class="t">Sebastián Sánchez</span> &nbsp;·&nbsp; <span class="g">Joan Tovar</span> &nbsp;·&nbsp; <span class="b">Jorge Garzón</span>',
+    0,940,{w:1920,align:'center',size:40,cls:'fade',step:0,delay:2100});
+  return[A=>{cs.forEach((c,k)=>c.c.draw(A,300+k*250,2200));
+    A.loop(s=>cs.forEach((c,k)=>{const t=c.t*(1+.35*Math.sin(s*.7+k)),m=muAt(t);c.c.set(EG.map(e=>[e,fd(e,t,m)]));}));}];}});
+
+// 2 ─ Motivación
+scene({who:'Sebastián',time:'0:45–2:15',part:'I · El problema físico',title:'El enigma del calor específico',build(r){
+  $(r,htm('Si los electrones de un metal fueran un <span class="r">gas clásico</span>, cada uno aportaría (3/2) k_{B}:'),90,215,{w:840,cls:'txt fade',step:0});
+  eq(r,R(ss(mi('C'),up('V'),mt(' clás')),mo('='),fr(mn(3),mn(2)),mi('N'),kB),120,345,{size:64,step:0,delay:500});
+  $(r,'Pero en el cobre a 300 K se mide apenas <span class="y">~1 %</span> de ese valor. ¿Dónde quedó el resto?',90,500,{w:840,cls:'txt fade',step:1,delay:1200});
+  $(r,htm('<b>Sommerfeld (1928):</b> los electrones son <span class="t">fermiones</span>. Por el principio de Pauli solo pueden excitarse los que están a ~k_{B}T de E_{F}.'),
+    90,650,{w:840,cls:'txt fade',step:2});
+  eq(r,R(CV,mo('='),mi('γ'),mi('T')),300,850,{size:76,color:YELLOW,step:2,delay:900,cls:'glow'});
+  const p=new Plot(r,{x:1010,y:200,w:830,h:760,xr:[0,3],yr:[0,27],yl:'C_{V}  [J/(mol K)]',yt:[0,5,10,15,20,25]});
+  const B=[[.5,12.47,RED,'electrones','clásicos: (3/2)R'],[1.5,.152,YELLOW,'electrones','medido: γT'],[2.5,24.94,GREY,'red cristalina','3R']]
+    .map(([x,v,c,l1,l2])=>({v,b:p.rect(x-.3,x+.3,0,c),t:p.text(x,v,fmt(v,3),{anchor:'middle',size:32,color:c,dy:-14,hidden:1}),
+      l1:p.text(x,0,l1,{anchor:'middle',size:26,dy:38,hidden:1}),l2:p.text(x,0,l2,{anchor:'middle',size:24,dy:70,color:GREY,hidden:1})}));
+  const grow=(A,k,d)=>{const b=B[k];A.tw(1200,q=>b.b.set(b.v*q),d,EO);b.t.fade(A,d+1000);b.l1.fade(A,d);b.l2.fade(A,d);};
+  const uno=p.text(1.5,6,'≈ 1 %',{anchor:'middle',size:46,color:YELLOW,hidden:1});
+  return[A=>{p.axes(A,300);grow(A,0,1100);grow(A,2,1500);},A=>{grow(A,1,0);uno.fade(A,900);}];}});
+
+// 3 ─ Objetivos
+scene({who:'Sebastián',time:'2:15–3:00',part:'I · El problema físico',title:'Objetivos',build(r){
+  $(r,'<div class="part t">Objetivo general</div><div class="txt" style="margin-top:14px">Simular numéricamente la contribución electrónica a la capacidad calorífica de un metal integrando la densidad de estados y la distribución de Fermi-Dirac.</div>',
+    90,210,{w:1740,cls:'card fade',step:0});
+  $(r,'<div class="part g">Objetivos específicos</div><div class="txt" style="margin-top:14px"><b>i.</b> Calcular la energía interna térmica integrando numéricamente g(E) · E · f(E,T).</div><div class="txt" style="margin-top:18px"><b>ii.</b> Obtener C<sub>V</sub>(T) por derivación numérica y contrastarla con la aproximación lineal de Sommerfeld.</div>',
+    90,470,{w:820,cls:'card fade',step:1});
+  const it=[['Ecuación de ligadura','Newton-Raphson → μ(T)',GOLD],['Cuadratura adaptativa','Gauss-Kronrod → U(T)',GOLD],['Diferenciación','C<sub>V</sub> = dU/dT → γ',BLUE]];
+  $(r,'<div class="part b">Cálculo numérico</div>',1010,470,{step:2,cls:'fade',w:820});
+  it.forEach(([a,b,c],k)=>$(r,`<span style="color:${c};font-style:italic;font-size:36px">${a}</span><br><span class="small">${b}</span>`,1010,540+k*130,{w:820,cls:'card fade',step:2,delay:k*350,style:'padding:16px 28px'}));
+  return[];}});
+
+// 4 ─ Modelo
+scene({who:'Sebastián',time:'3:00–4:45',part:'I · El problema físico',title:'El modelo: g(E) y Fermi-Dirac',build(r){
+  const p1=new Plot(r,{x:50,y:185,w:900,h:560,xr:[0,2],yr:[0,2.2],xl:'ε = E/E_{F}',yl:'g(ε)',xt:[0,.5,1,1.5,2],yt:[0,.5,1,1.5,2]});
+  const p2=new Plot(r,{x:980,y:185,w:900,h:560,xr:[0,2],yr:[-.05,1.12],xl:'ε = E/E_{F}',yl:'f(ε)',xt:[0,.5,1,1.5,2],yt:[0,.5,1]});
+  const mar=p1.area({color:BLUE,op:.35}),occ=p1.area({color:BLUE,op:.35}),hol=p1.area({color:GOLD,op:.8}),exc=p1.area({color:RED,op:.8});
+  const gc=p1.curve(EG.map(e=>[e,g(e)]),{color:TEAL,width:5}),ef=p1.vline(1,{color:GREY,dash:'8 8',width:2});
+  const efl=p1.text(1,2.05,'E_{F}',{dx:10,color:GREY,hidden:1});
+  const leg=p1.text(0.05,2.05,'',{size:26,hidden:1});
+  const band=p2.area({color:GOLD,op:.16}),esc=p2.curve(EG.map(e=>[e,e<1?1:0]),{color:GREY,dash:'8 8',width:3});
+  const fc=p2.curve([],{color:YELLOW,width:5}),mul=p2.vline(1,{color:RED,dash:'5 7',width:2.5});
+  const rd=$(r,'',1560,790,{cls:'read',step:3,style:'width:300px;font-size:24px'});
+  eq(r,R(mi('g'),P(mi('E')),mo('='),fr(mn(3),mn(2)),sq(mi('E'))),110,790,{size:54,step:0,delay:1400,color:TEAL});
+  eq(r,R(mi('f'),P(mi('E'),mo(','),mi('T')),mo('='),fr(mn(1),R(sp(mi('e'),R(P(mi('E'),mo('−'),mi('μ')),mo('/'),kB,mi('T'))),mo('+'),mn(1)))),1040,780,{size:54,step:2,delay:300,color:YELLOW});
+  eq(r,R(mi('N'),mo('='),INT(mn(0),mi('∞')),mi('g'),P(mi('E')),mi('f'),P(mi('E'),mo(','),mi('T')),dd,mi('E')),110,930,{size:50,step:4});
+  eq(r,R(mi('U'),mo('='),INT(mn(0),mi('∞')),mi('E'),mi('g'),P(mi('E')),mi('f'),P(mi('E'),mo(','),mi('T')),dd,mi('E')),1040,930,{size:50,step:4,delay:500});
+  return[A=>{p1.axes(A,250);gc.draw(A,900,1500);ef.draw(A,1900,500);efl.fade(A,2200);},
+    A=>{mar.show();A.tw(2000,q=>mar.set(EG.filter(e=>e<=q).map(e=>[e,g(e)])),0,EIO);leg.set('mar de Fermi (T = 0)');leg.fade(A,600);},
+    A=>{p2.axes(A,0);esc.draw(A,700,1200);},
+    A=>{mar.fade(A,0);[occ,hol,exc,band].forEach(a=>a.show());fc.show();mul.show();leg.set('');
+      p1.text(1.15,1.0,'excitados',{color:RED,size:28,hidden:1}).fade(A,300);p1.text(.32,1.25,'huecos',{color:GOLD,size:28,hidden:1}).fade(A,300);
+      A.loop(s=>{const t=.005+.245*(1-Math.cos(2*Math.PI*s/9))/2,m=muAt(t),f=EG.map(e=>fd(e,t,m));
+        fc.set(EG.map((e,i)=>[e,f[i]]));mul.set([[m,-.05],[m,1.12]]);
+        const bx=EG.filter(e=>Math.abs(e-m)<=2*t);band.set(bx.map(e=>[e,1.12]),bx.map(e=>[e,-.05]));
+        occ.set(EG.map((e,i)=>[e,g(e)*f[i]]));
+        const lo=EG.map((e,i)=>[e,g(e)*f[i]]).filter(p=>p[0]<=1);hol.set(lo.map(p=>[p[0],g(p[0])]),lo);
+        exc.set(EG.map((e,i)=>[e,g(e)*f[i]]).filter(p=>p[0]>=1));
+        rd.innerHTML=`t = T/T<sub>F</sub> = ${t.toFixed(3)}<br>μ/E<sub>F</sub> = ${m.toFixed(5)}<br><span style="color:${GOLD}">franja μ ± 2k<sub>B</sub>T</span>`;});}];}});
+
+// 5 ─ Unidades y Sommerfeld
+scene({who:'Sebastián',time:'4:45–6:30',part:'I · El problema físico',title:'Unidades y predicción de Sommerfeld',build(r){
+  $(r,'<span class="part t">Variables adimensionales</span>',90,215,{step:0,cls:'fade'});
+  eq(r,R(mi('ε'),mo('='),fr(mi('E'),EF),mo(',  '),mi('t'),mo('='),fr(mi('T'),TF)),110,285,{size:52,step:0,delay:300});
+  eq(r,R(INT(mn(0),mn(1)),mi('g'),P(mi('ε')),dd,mi('ε'),mo('='),mn(1),mo('  ⇒  '),mi('U'),P(mn(0)),mo('='),fr(mn(3),mn(5)),mi('N'),EF),110,420,{size:52,step:0,delay:1100});
+  $(r,htm('Metal típico: T_{F} ~ 10^{4}–10^{5} K → a 300 K, <span class="y">t ~ 0.004</span>'),110,570,{cls:'small fade',step:0,delay:1800,w:800});
+  $(r,'<span class="part g">Expansión de Sommerfeld (t ≪ 1)</span>',1000,215,{step:1,cls:'fade'});
+  const t2=sp(mi('t'),mn(2)),pi2=sp(mi('π'),mn(2));
+  eq(r,R(fr(mi('μ'),EF),mo('≈'),mn(1),mo('−'),fr(pi2,mn(12)),t2),1020,285,{size:52,step:1,delay:300});
+  eq(r,R(fr(R(mo('Δ'),mi('U')),R(mi('N'),EF)),mo('≈'),fr(pi2,mn(4)),t2),1020,420,{size:52,step:2});
+  eq(r,R(fr(CV,R(mi('N'),kB)),mo('≈'),fr(pi2,mn(2)),mi('t')),1020,560,{size:52,step:3});
+  eq(r,R(mi('γ'),mo('='),fr(pi2,mn(2)),mo('≈'),mn('4.9348')),660,780,{size:82,color:YELLOW,step:4,cls:'glow'});
+  $(r,htm('en unidades de N k_{B}/T_{F}'),0,940,{w:1920,align:'center',cls:'small fade',step:4,delay:800});
+  return[];}});
+
+// 6 ─ Algoritmo
+scene({who:'Joan',time:'6:30–7:30',part:'II · Métodos numéricos',title:'Esquema del algoritmo',build(r){
+  const N=[['Rejilla de T','200 valores de t',TEAL],['Ligadura','Newton → μ(t)',GOLD],['Cuadratura','Gauss-Kronrod → U(t)',GOLD],
+    ['Derivada','dif. centrales → C<sub>V</sub>(t)',BLUE],['Ajuste','mínimos cuadrados → γ',BLUE]];
+  const bw=290,gap=67,x0=90,y0=330,bh=190;
+  N.forEach(([a,b,c],k)=>$(r,`<div class="h" style="color:${c}">${a}</div><div class="s">${b}</div>`,x0+k*(bw+gap),y0,
+    {cls:'node fade',step:0,delay:k*380,style:`width:${bw}px;height:${bh}px;border-color:${c}`}));
+  const sv=add(r,'svg',{width:1920,height:1080,class:'abs'});sv.style.left=0;sv.style.top=0;sv.style.pointerEvents='none';
+  const arr=[];for(let k=0;k<4;k++){const xa=x0+k*(bw+gap)+bw+6,xb=xa+gap-14,y=y0+bh/2;
+    arr.push([add(sv,'path',{d:`M${xa},${y}L${xb},${y}`,stroke:FG,'stroke-width':4,fill:'none'}),add(sv,'path',{d:`M${xb-14},${y-10}L${xb+2},${y}L${xb-14},${y+10}`,stroke:FG,'stroke-width':4,fill:'none',opacity:0})]);}
+  const xs=x0+bw/2,xe=x0+2*(bw+gap)+bw/2,yb=y0+bh+10;
+  const lp=add(sv,'path',{d:`M${xe},${yb}C${xe},${yb+170} ${xs},${yb+170} ${xs},${yb}`,stroke:YELLOW,'stroke-width':4,fill:'none','stroke-dasharray':'1 1',opacity:0});
+  const lpa=add(sv,'path',{d:`M${xs-12},${yb+20}L${xs},${yb}L${xs+12},${yb+20}`,stroke:YELLOW,'stroke-width':4,fill:'none',opacity:0});
+  const pulse=add(sv,'circle',{r:0,fill:YELLOW});
+  $(r,'para cada temperatura (200 veces)',x0+180,y0+bh+150,{cls:'small fade',step:1,style:'color:#FFE14D'});
+  $(r,'Con U(t) en toda la rejilla: derivar y ajustar.',x0+3*(bw+gap)-40,y0+bh+60,{cls:'small fade',step:1,delay:600,w:700});
+  $(r,'Python · NumPy · SciPy · Matplotlib · GitHub<br><span class="gr" style="font-size:26px">…y esta presentación hace los mismos cálculos en vivo en JavaScript</span>',
+    0,850,{w:1920,align:'center',size:36,cls:'fade',step:2});
+  return[A=>arr.forEach(([l,h],k)=>{stroke(A,l,600+k*380,400);A.tw(200,p=>h.setAttribute('opacity',p),1000+k*380);}),
+    A=>{lp.setAttribute('opacity',1);stroke(A,lp,0,1200);A.tw(300,p=>lpa.setAttribute('opacity',p),1100);
+      A.loop(s=>{const L=lp.getTotalLength(),q=(s*.45)%1,pt=lp.getPointAtLength(L*q);pulse.setAttribute('cx',pt.x);pulse.setAttribute('cy',pt.y);
+        pulse.setAttribute('r',s<1.2?0:9);});}];}});
+
+// 7 ─ Newton-Raphson
+scene({who:'Joan',time:'7:30–9:15',part:'II · Métodos numéricos',title:'Ecuación de ligadura: Newton-Raphson',build(r){
+  const H=D.newton,t0=.3;
+  eq(r,R(mi('F'),P(mi('μ')),mo('='),INT(),mi('g'),mi('f'),dd,mi('ε'),mo('−'),mn(1),mo('='),mn(0)),90,215,{size:46,step:0,delay:1500});
+  eq(r,R(sb(mi('μ'),R(mi('k'),mo('+'),mn(1))),mo('='),sb(mi('μ'),mi('k')),mo('−'),fr(R(mi('F'),P(sb(mi('μ'),mi('k')))),R(mi('F'),mo('′'),P(sb(mi('μ'),mi('k')))))),90,320,{size:46,step:1,color:GOLD});
+  eq(r,R(mi('F'),mo('′'),mo('='),INT(),mi('g'),P(mo('−'),fr(R(mo('∂'),mi('f')),R(mo('∂'),mi('ε')))),dd,mi('ε'),mo('>'),mn(0)),90,450,{size:46,step:2,delay:200});
+  const tb=$(r,'<table class="tb"><tr><th>k</th><th>μ<sub>k</sub></th><th>|N − 1|</th></tr>'+
+    H.map((h,k)=>`<tr data-step="${k+1}"><td>${k}</td><td>${h.mu.toFixed(10)}</td><td>${Math.abs(h.F).toExponential(1)}</td></tr>`).join('')+'</table>',90,590,{});
+  [...tb.querySelectorAll('tr[data-step]')].forEach(tr=>{if(+tr.dataset.step>5)tr.dataset.step=6;tr.style.transitionDelay=(+tr.dataset.step===1?0:1500)+'ms';});
+  const p=new Plot(r,{x:820,y:185,w:1050,h:700,xr:[0,1.5],yr:[-.9,.9],xl:'μ/E_{F}',yl:'F(μ) = N(μ) − 1',xt:[0,.25,.5,.75,1,1.25,1.5],yt:[-.75,-.5,-.25,0,.25,.5,.75]});
+  const zero=p.hline(0,{color:GREY,width:2}),fc=p.curve(lin(0,1.5,160).map(m=>[m,Nn(m,t0)-1]),{color:FG,width:5});
+  p.text(.03,.8,'t = 0.3',{color:GREY,size:28});
+  const steps=[A=>{p.axes(A,200);zero.draw(A,800,600);fc.draw(A,1000,1600);}];
+  const tang=[],cols=[GOLD,TEAL,BLUE,PURPLE];
+  const d0=p.dot(H[0].mu,H[0].F,{color:GOLD}),v0=p.line(H[0].mu,0,H[0].mu,H[0].F,{color:GOLD,dash:'4 6',width:2.5}),l0=p.text(H[0].mu,0,'μ_{0}',{anchor:'middle',dy:-14,color:GOLD,hidden:1,size:32});
+  steps.push(A=>{v0.draw(A,0,500);d0.pop(A,400);l0.fade(A,500);});
+  for(let k=0;k<4&&k<H.length-1;k++){const h=H[k],n=H[k+1],c=cols[k];
+    const tl=p.line(0,h.F-h.d*h.mu,1.5,h.F+h.d*(1.5-h.mu),{color:c,width:3,dash:'12 8'});
+    const mv=p.dot(h.mu,h.F,{color:c,r:7}),vv=p.line(n.mu,0,n.mu,n.F,{color:c,dash:'4 6',width:2.5}),dn=p.dot(n.mu,n.F,{color:cols[k+1]||PURPLE});
+    const ln=p.text(n.mu,0,k<2?'μ_{'+(k+1)+'}':'',{anchor:'middle',dy:n.F>0?40:-14,color:c,hidden:1,size:32});
+    tang.push(tl);
+    steps.push(A=>{if(k>0)tang[k-1].fade(A,.18,0,500);tl.draw(A,0,900);mv.show();
+      A.tw(800,q=>mv.move(h.mu+(n.mu-h.mu)*q,h.F*(1-q)),900);ln.fade(A,1500);vv.draw(A,1600,400);dn.pop(A,1800);});}
+  const rt=p.vline(H[H.length-1].mu,{color:TEAL,width:2.5,dash:'3 6'});
+  const fin=$(r,`raíz: μ/E<sub>F</sub> = <span class="t">${H[H.length-1].mu.toFixed(10)}</span><br>en ${H.length-1} iteraciones · Sommerfeld: ${(1-PI2/12*.09).toFixed(4)}`,830,900,{cls:'read fade',step:6,w:1000});
+  steps.push(A=>{tang[tang.length-1].fade(A,.18);rt.draw(A,0,800);});
+  return steps;}});
+
+// 8 ─ μ(T)
+scene({who:'Joan',time:'9:15–10:30',part:'II · Métodos numéricos',title:'Resultado: el potencial químico μ(T)',build(r){
+  const S=D.ext;
+  const p=new Plot(r,{x:50,y:185,w:1180,h:780,xr:[0,1],yr:[-.2,1.05],xl:'t = T/T_{F}',yl:'μ/E_{F}',xt:[0,.2,.4,.6,.8,1],yt:[0,.25,.5,.75,1]});
+  const z=p.hline(0,{color:GREY,width:1.5}),num=p.curve(S.t.map((t,i)=>[t,S.mu[i]]),{color:BLUE,width:6});
+  const som=p.curve(S.t.map(t=>[t,1-PI2/12*t*t]),{color:RED,width:4,dash:'14 10'});
+  const vl=p.vline(0,{color:GREY,width:1.5,dash:'3 6'}),d1=p.dot(0,1,{color:BLUE}),d2=p.dot(0,1,{color:RED,r:7});
+  const ln=p.text(.62,.68,'numérico',{color:BLUE,size:30,hidden:1}),ls=p.text(.62,.92,'Sommerfeld',{color:RED,size:30,hidden:1});
+  eq(r,R(fr(mi('μ'),EF),mo('≈'),mn(1),mo('−'),fr(sp(mi('π'),mn(2)),mn(12)),sp(mi('t'),mn(2))),1280,230,{size:50,step:1,color:RED});
+  const rd=$(r,'',1280,400,{cls:'read fade',step:2,w:560});
+  $(r,`<div class="small">Conservación de N en las 200 temperaturas:</div><div style="font-size:44px" class="t">max |N − 1| = ${D.maxN.toExponential(1)}</div>
+    <div class="small" style="margin-top:20px">Iteraciones de Newton por temperatura: <span class="y">${D.itMed.toFixed(2)}</span> en promedio</div>`,1280,700,{w:580,cls:'fade',step:3});
+  return[A=>{p.axes(A,200);z.draw(A,700,500);num.draw(A,900,2200);ln.fade(A,2800);},
+    A=>{som.draw(A,0,1800);ls.fade(A,1200);},
+    A=>{vl.show();d1.show();d2.show();A.loop(s=>{const t=.01+.99*((s/9)%1),m=interp(S.t,S.mu,t),ms=1-PI2/12*t*t;
+      vl.set([[t,-.2],[t,1.05]]);d1.move(t,m);d2.move(t,ms);
+      rd.innerHTML=`t        = ${t.toFixed(3)}<br><span class="b">numérico   ${m.toFixed(6)}</span><br><span class="r">Sommerfeld ${ms.toFixed(6)}</span><br>diferencia ${Math.abs(m-ms).toExponential(2)}`;});}];}});
+
+// 9 ─ Cuadratura adaptativa
+scene({who:'Joan',time:'10:30–12:00',part:'II · Métodos numéricos',title:'Integración adaptativa de U(T)',build(r){
+  const p=new Plot(r,{x:640,y:185,w:1230,h:720,xr:[0,2],yr:[0,1.75],xl:'ε = E/E_{F}',yl:'ε g(ε) f(ε)',xt:[0,.5,1,1.5,2],yt:[0,.5,1,1.5]});
+  const ar=p.area({color:BLUE,op:.22}),cu=p.curve([],{color:BLUE,width:5});const gl=add(p.gD,'g');
+  const mu0=p.vline(1,{color:FG,width:2,dash:'3 6'});
+  eq(r,R(mi('U'),mo('='),INT(mn(0),R(mi('μ'),mo('+'),mn(40),kB,mi('T'))),mi('ε'),mi('g'),P(mi('ε')),mi('f'),P(mi('ε')),dd,mi('ε')),70,215,{size:44,step:0,delay:1200});
+  $(r,'<span class="r">│</span> bordes de los subintervalos elegidos por el algoritmo',70,350,{cls:'small fade',step:0,delay:1800,w:540});
+  const rd=$(r,'',70,450,{cls:'read fade',step:1,w:520,style:'font-size:24px'});
+  $(r,htm('Corte en μ + 40 k_{B}T: la cola vale ~e^{−40} ≈ 4×10^{−18}'),70,850,{cls:'small fade',step:2,w:540});
+  const draw=t=>{const m=muAt(t),h=e=>e*g(e)*fd(e,t,m),info={iv:[]},U=Uu(m,t,info);
+    const pts=EG.map(e=>[e,h(e)]);cu.set(pts);ar.set(pts);mu0.set([[m,0],[m,1.75]]);
+    while(gl.firstChild)gl.firstChild.remove();const ed=new Set(info.iv);
+    for(const x of ed)if(x>0&&x<=2)add(gl,'line',{x1:p.X(x),x2:p.X(x),y1:p.Y(0),y2:p.Y(Math.min(1.7,h(x)+.25)),stroke:RED,'stroke-width':1.6,opacity:.8});
+    const em=Math.max(m,0)+NSIG*t,err=Math.abs(simpson(h,0,em,info.nev)-U);
+    rd.innerHTML=`t = ${t.toFixed(4)}   μ = ${m.toFixed(5)}<br>subintervalos: <span class="r">${ed.size-1}</span><br>evaluaciones: ${info.nev}<br>U/(N E<sub>F</sub>) = <span class="y">${U.toFixed(12)}</span><br><span class="gr">Simpson, paso fijo,<br>mismas evaluaciones: error ${err.toExponential(1)}</span>`;};
+  return[A=>{p.axes(A,200);draw(.3);cu.draw(A,900,1500);ar.draw(A,900,1500);mu0.draw(A,2000,400);},
+    A=>{cu.show();ar.show();mu0.show();A.loop(s=>{const q=(1-Math.cos(2*Math.PI*s/14))/2;draw(Math.exp(Math.log(.3)+(Math.log(.004)-Math.log(.3))*q));});}];}});
+
+// 10 ─ ΔU
+scene({who:'Joan',time:'12:00–13:00',part:'II · Métodos numéricos',title:'Energía térmica ΔU(T)',build(r){
+  const S=D.fit;
+  const p=new Plot(r,{x:50,y:185,w:1000,h:760,xr:[0,.5],yr:[0,.65],xl:'t = T/T_{F}',yl:'ΔU/(N E_{F})',xt:[0,.1,.2,.3,.4,.5],yt:[0,.2,.4,.6]});
+  const num=p.curve(S.t.map((t,i)=>[t,S.du[i]]),{color:BLUE,width:6}),som=p.curve(S.t.map(t=>[t,PI2/4*t*t]),{color:RED,width:4,dash:'14 10'});
+  const ln=p.text(.44,.33,'numérico',{color:BLUE,hidden:1,size:30}),ls=p.text(.3,.5,'(π^{2}/4) t^{2}',{color:RED,hidden:1,size:30});
+  eq(r,R(mo('Δ'),mi('U'),mo('='),mi('U'),P(mi('T')),mo('−'),fr(mn(3),mn(5)),mi('N'),EF),1100,215,{size:46,step:0,delay:1500});
+  const q=new Plot(r,{x:1090,y:360,w:790,h:520,xr:[0,.5],yr:[1.6,2.6],xl:'t',yl:'ΔU / t^{2}',xt:[0,.1,.2,.3,.4,.5],yt:[1.8,2,2.2,2.4,2.6]});
+  const rq=q.curve(S.t.map((t,i)=>[t,S.du[i]/(t*t)]),{color:TEAL,width:5}),lim=q.hline(PI2/4,{color:RED,width:3,dash:'10 8'});
+  const ll=q.text(.5,PI2/4,'π^{2}/4 = 2.4674',{anchor:'end',dy:-14,color:RED,hidden:1,size:28});
+  $(r,`Ajuste ΔU = a t<sup>2</sup> (t ≤ 0.05): <span class="t">a = ${D.a.toFixed(3)}</span> &nbsp;vs&nbsp; <span class="r">π²/4 = 2.467</span><br><span class="gr">la diferencia de ${(100*(1-D.a/(PI2/4))).toFixed(1)} % es la corrección de orden t<sup>4</sup></span>`,
+    1100,900,{cls:'small fade',step:3,w:780});
+  return[A=>{p.axes(A,200);num.draw(A,900,2000);ln.fade(A,2600);},A=>{som.draw(A,0,1600);ls.fade(A,1200);},
+    A=>{q.axes(A,0);rq.draw(A,700,1600);lim.draw(A,1800,800);ll.fade(A,2300);}];}});
+
+// 11 ─ Diferenciación numérica
+scene({who:'Jorge',time:'13:00–14:15',part:'III · Resultados',title:'Diferenciación numérica',build(r){
+  const S=D.ext,ym=Math.max(...S.du)*1.08;
+  const p=new Plot(r,{x:40,y:300,w:900,h:660,xr:[0,1],yr:[0,ym],xl:'t = T/T_{F}',yl:'ΔU/(N E_{F})',xt:[0,.2,.4,.6,.8,1],yt:[0,.25,.5,.75,1].filter(v=>v<ym)});
+  const q=new Plot(r,{x:980,y:300,w:900,h:660,xr:[0,1],yr:[0,2.2],xl:'t = T/T_{F}',yl:'C_{V}/(N k_{B})',xt:[0,.2,.4,.6,.8,1],yt:[0,.5,1,1.5,2]});
+  eq(r,R(CV,P(sb(mi('T'),mi('i'))),mo('≈'),fr(R(mi('U'),P(sb(mi('T'),R(mi('i'),mo('+'),mn(1)))),mo('−'),mi('U'),P(sb(mi('T'),R(mi('i'),mo('−'),mn(1))))),R(mn(2),mi('h'))),
+    mo('+'),mi('O'),P(sp(mi('h'),mn(2)))),0,190,{w:1920,align:'center',size:46,step:0,delay:1200,color:BLUE});
+  const du=p.curve(S.t.map((t,i)=>[t,S.du[i]]),{color:FG,width:5});
+  const i0=60,k=14,a=i0-k,b=i0+k,sl=(S.du[b]-S.du[a])/(S.t[b]-S.t[a]);
+  const sec=p.line(S.t[a]-.15,S.du[a]-.15*sl,S.t[b]+.15,S.du[b]+.15*sl,{color:GOLD,width:3.5});
+  const pa=p.dot(S.t[a],S.du[a],{color:GOLD,r:8}),pb=p.dot(S.t[b],S.du[b],{color:GOLD,r:8});
+  const ta=p.text(S.t[a],S.du[a],'T − h',{anchor:'end',dx:-12,dy:-8,color:GOLD,hidden:1}),tb=p.text(S.t[b],S.du[b],'T + h',{dx:14,dy:24,color:GOLD,hidden:1});
+  const sm=q.curve(S.t.map(t=>[t,GTEO*t]),{color:RED,width:3,dash:'12 9',op:.6}),cl=q.hline(1.5,{color:GREY,width:2,dash:'3 6'});
+  const cv=q.curve([],{color:BLUE,width:6}),tg=p.curve([],{color:BLUE,width:4}),dp=p.dot(0,0,{color:BLUE}),dq=q.dot(0,0,{color:BLUE});
+  const rd=$(r,'',1440,330,{cls:'read fade',step:2,style:'font-size:24px'});
+  $(r,'Derivar amplifica el ruido: un error de 10<sup>−6</sup> en U daría ~0.5 % en C<sub>V</sub>. Por eso la integral usa tolerancia 10<sup>−13</sup>.',60,1000,{w:1800,align:'center',cls:'small fade',step:3});
+  return[A=>{p.axes(A,200);du.draw(A,900,1800);},
+    A=>{sec.draw(A,600,900);pa.pop(A,0);pb.pop(A,200);ta.fade(A,300);tb.fade(A,400);},
+    A=>{sec.fade(A,.15);pa.el.setAttribute('opacity',.3);pb.el.setAttribute('opacity',.3);ta.fade(A,0,0);tb.fade(A,0,0);
+      q.axes(A,0);sm.draw(A,500,1200);cl.draw(A,700,800);cv.show();tg.show();dp.show();dq.show();
+      A.tw(8000,u=>{const i=Math.max(1,Math.min(198,Math.round(1+u*197))),t=S.t[i],L=.13;
+        tg.set([[t-L,S.du[i]-L*S.cv[i]],[t+L,S.du[i]+L*S.cv[i]]]);dp.move(t,S.du[i]);dq.move(t,S.cv[i]);
+        cv.set(S.t.slice(0,i+1).map((x,j)=>[x,S.cv[j]]));
+        rd.innerHTML=`t = ${t.toFixed(3)}  pendiente = C<sub>V</sub> = <span class="b">${S.cv[i].toFixed(4)}</span>`;},1200,ELIN);}];}});
+
+// 12 ─ C_V frente a Sommerfeld
+scene({who:'Jorge',time:'14:15–15:45',part:'III · Resultados',title:'C_{V}(T) frente a Sommerfeld',build(r){
+  const S=D.ext;
+  const p=new Plot(r,{x:40,y:190,w:1000,h:790,xr:[0,1],yr:[0,2.2],xl:'t = T/T_{F}',yl:'C_{V}/(N k_{B})',xt:[0,.2,.4,.6,.8,1],yt:[0,.5,1,1.5,2]});
+  const cv=p.curve(S.t.map((t,i)=>[t,S.cv[i]]),{color:BLUE,width:6}),li=p.curve(S.t.map(t=>[t,GTEO*t]),{color:RED,width:4,dash:'14 10'});
+  const cu=p.curve(S.t.map(t=>[t,GTEO*t+DTEO*t**3]),{color:PURPLE,width:4,dash:'3 8'}),cl=p.hline(1.5,{color:GREY,width:3,dash:'2 7'});
+  const T=(x,y,s,c,o)=>p.text(x,y,s,Object.assign({color:c,size:30,hidden:1},o||{}));
+  const lc=T(.7,1.18,'numérico',BLUE),ll=T(.3,1.95,'(π^{2}/2) t',RED),lu=T(.44,.55,'(π^{2}/2) t − (3π^{4}/20) t^{3}',PURPLE),lk=T(.6,1.5,'límite clásico 3/2',GREY,{dy:-14});
+  const q=new Plot(r,{x:1080,y:190,w:800,h:640,xr:[0,1],yr:[.25,1.05],xl:'t = T/T_{F}',yl:'C_{V} / C_{V}^{Somm}',xt:[0,.2,.4,.6,.8,1],yt:[.25,.5,.75,1]});
+  const rr=q.curve(S.t.map((t,i)=>[t,S.cv[i]/(GTEO*t)]),{color:GREEN,width:6}),one=q.hline(1,{color:FG,width:2,dash:'8 8'});
+  const mk=[.1,.3,.5].map(tv=>{const i=S.t.reduce((b,t,j)=>Math.abs(t-tv)<Math.abs(S.t[b]-tv)?j:b,0),v=S.cv[i]/(GTEO*S.t[i]);
+    return[q.dot(S.t[i],v,{color:YELLOW}),q.text(S.t[i],v,(100*v).toFixed(1)+' %',{dx:16,dy:tv<.2?40:-12,color:YELLOW,hidden:1,size:30})];});
+  $(r,'La recta de Sommerfeld vale a baja T; a t ~ 1 los electrones se comportan como un gas clásico.',1090,880,{w:790,cls:'small fade',step:4,delay:1600});
+  return[A=>{p.axes(A,200);cv.draw(A,900,2200);lc.fade(A,2800);},A=>{li.draw(A,0,1500);ll.fade(A,1200);},
+    A=>{cu.draw(A,0,1600);lu.fade(A,1300);},A=>{cl.draw(A,0,1000);lk.fade(A,700);},
+    A=>{q.axes(A,0);one.draw(A,600,600);rr.draw(A,800,1800);mk.forEach(([d,t],k)=>{d.pop(A,1500+k*400);t.fade(A,1600+k*400);});}];}});
+
+// 13 ─ γ
+scene({who:'Jorge',time:'15:45–17:00',part:'III · Resultados',title:'Extracción del coeficiente lineal γ',build(r){
+  const S=D.fit,aj=D.aj,pts=aj.idx.map(i=>[S.t[i]**2,S.cv[i]/S.t[i]]);
+  const p=new Plot(r,{x:40,y:300,w:1150,h:690,xr:[0,.0026],yr:[4.88,4.945],xl:'t^{2}',yl:'C_{V} / t',L:130,
+    xt:[0,.0005,.001,.0015,.002,.0025],yt:[4.89,4.9,4.91,4.92,4.93,4.94],fx:v=>fmt(v,4),fy:v=>v.toFixed(2)});
+  eq(r,R(CV,mo('='),mi('γ'),mi('t'),mo('+'),mi('δ'),sp(mi('t'),mn(3)),mo('  ⟹  '),fr(CV,mi('t')),mo('='),Cl(YELLOW,mi('γ')),mo('+'),mi('δ'),sp(mi('t'),mn(2))),0,190,{w:1920,align:'center',size:48,step:0,delay:900});
+  const dots=pts.map(([x,y])=>p.dot(x,y,{color:BLUE,r:8}));
+  const fit=p.line(0,aj.g2,.0026,aj.g2+aj.d2*.0026,{color:YELLOW,width:4}),gd=p.dot(0,aj.g2,{color:YELLOW,r:12});
+  const gl=p.text(0,aj.g2,'γ = '+aj.g2.toFixed(6),{dx:24,dy:-26,color:YELLOW
+,hidden:1,size:32});
+  const th=p.hline(GTEO,{color:RED,width:2.5,dash:'10 8'}),tl=p.text(.0026,GTEO,'π^{2}/2 = 4.934802',{anchor:'end',dy:-12,color:RED,hidden:1,size:28});
+  const nv=p.hline(aj.g1,{color:GOLD,width:2.5,dash:'3 7'}),nl=p.text(.0026,aj.g1,'ajuste C_{V} = γt: '+aj.g1.toFixed(4),{anchor:'end',dy:34,color:GOLD,hidden:1,size:28});
+  const err=v=>(100*(v/GTEO-1)).toFixed(4)+' %';
+  $(r,`<div class="small">Ajuste con los puntos t ≤ 0.05:</div>
+    <div style="font-size:36px;margin-top:10px"><span class="y">γ = ${aj.g2.toFixed(6)}</span></div>
+    <div class="small">error frente a π²/2: <span class="y">${err(aj.g2)}</span></div>
+    <div class="small" style="margin-top:14px">δ ajustado = ${aj.d2.toFixed(2)} &nbsp;(teoría ${DTEO.toFixed(2)})</div>`,1250,330,{w:560,cls:'card fade',step:2,delay:1400});
+  $(r,`<div class="small"><span class="g">Recta pura C<sub>V</sub> = γt:</span> ${aj.g1.toFixed(4)} (${err(aj.g1)})<br>Promedia C<sub>V</sub>/t sin corregir la pendiente δ, por eso sale bajo.</div>`,1250,640,{w:560,cls:'card fade',step:3});
+  $(r,'<table class="tb"><tr><th>puntos</th><th>γ</th></tr><tr><td>50</td><td>4.933624</td></tr><tr><td>100</td><td>4.934682</td></tr><tr><td>200</td><td>4.934927</td></tr><tr><td>400</td><td>4.934981</td></tr></table><div class="small" style="margin-top:8px">convergencia con el paso h</div>',
+    1250,820,{cls:'fade',step:4,style:'transform-origin:0 0'});
+  return[A=>{p.axes(A,200);},A=>{dots.forEach((d,k)=>d.pop(A,k*120));},
+    A=>{fit.draw(A,0,1400);gd.pop(A,1300);gl.fade(A,1400);th.draw(A,1800,800);tl.fade(A,2200);},
+    A=>{nv.draw(A,0,900);nl.fade(A,700);}];}});
+
+// 14 ─ Cobre
+scene({who:'Jorge',time:'17:00–18:30',part:'III · Resultados',title:'Aplicación a un metal real: el cobre',build(r){
+  const GEXP=.695,TH=343,BETA=12*Math.PI**4*8.314462618/(5*TH**3)*1e3;
+  const cards=[['E<sub>F</sub> = 7.0 eV','T<sub>F</sub> = ','',D.TF,0,' K','a 300 K: t = '+(300/D.TF).toFixed(4),TEAL],
+    ['γ calculado','','',D.gfis,3,'','mJ/(mol K²)',BLUE],['γ experimental','','',GEXP,3,'','mJ/(mol K²)',RED],
+    ['masa efectiva','m*/m ≈ ','',GEXP/D.gfis,2,'','γ<sub>exp</sub> / γ<sub>teo</sub>',YELLOW]];
+  const el=cards.map(([a,b,_,v,d,u,c,col],k)=>{const e=$(r,`<div class="small">${a}</div><div style="font-size:46px;color:${col};margin:8px 0">${b}<span class="v">0</span>${u}</div><div class="small gr">${c}</div>`,
+    90+k*440,210,{w:400,cls:'card fade',step:k<1?0:k<3?1:3,align:'center',style:'padding:20px 10px'});return{e,v,d};});
+  const count=(A,k,d)=>{const c=el[k];A.tw(1300,p=>c.e.querySelector('.v').textContent=c.d?(p*c.v).toFixed(c.d):Math.round(p*c.v).toLocaleString('fr-FR'),d,EO);};
+  const p=new Plot(r,{x:60,y:470,w:1150,h:560,xr:[0,25],yr:[0,2.0],xl:'T^{2}  [K^{2}]',yl:'C/T  [mJ/(mol K^{2})]',xt:[0,5,10,15,20,25],yt:[0,.5,1,1.5,2]});
+  const ex=p.line(0,GEXP,25,GEXP+BETA*25,{color:RED,width:5}),te=p.line(0,D.gfis,25,D.gfis+BETA*25,{color:BLUE,width:4,dash:'12 9'});
+  const de=p.dot(0,GEXP,{color:RED,r:11}),dt=p.dot(0,D.gfis,{color:BLUE,r:11});
+  const le=p.text(1.2,GEXP+BETA*1.2,'electrones reales + red',{dy:-22,color:RED,hidden:1}),lt=p.text(1.2,D.gfis+BETA*1.2,'electrones libres + red',{dy:46,color:BLUE,hidden:1});
+  eq(r,R(fr(mi('C'),mi('T')),mo('='),Cl(YELLOW,mi('γ')),mo('+'),mi('β'),sp(mi('T'),mn(2))),1290,500,{size:56,step:2});
+  $(r,'El corte con el eje es γ; la pendiente β es la red (Debye, θ<sub>D</sub> = 343 K). <span class="gr">Rectas modelo, no datos medidos.</span>',1290,640,{w:580,cls:'small fade',step:2,delay:600});
+  $(r,'El modelo de electrones libres no incluye el potencial de la red ni la interacción electrón-fonón: ambos se resumen en m*/m.',1290,830,{w:580,cls:'small fade',step:3,delay:600});
+  return[A=>count(A,0,300),A=>{count(A,1,200);count(A,2,600);},
+    A=>{p.axes(A,0);ex.draw(A,700,1500);te.draw(A,1000,1500);de.pop(A,2200);dt.pop(A,2400);le.fade(A,2300);lt.fade(A,2500);},
+    A=>count(A,3,300)];}});
+
+// 15 ─ Conclusiones
+scene({who:'Jorge',time:'18:30–19:30',part:'III · Resultados',title:'Conclusiones',build(r){
+  const it=[['Ligadura',`Newton-Raphson salvaguardado: N se conserva a ${D.maxN.toExponential(0)} en ~${Math.round(D.itMed)} iteraciones.`,GOLD],
+    ['Integración','La cuadratura adaptativa sigue el escalón de Fermi-Dirac con tolerancia 10<sup>−13</sup>.',GOLD],
+    ['C<sub>V</sub> y γ',`C<sub>V</sub> es lineal a baja T; γ = ${D.aj.g2.toFixed(5)} coincide con π²/2 dentro de ${(100*Math.abs(D.aj.g2/GTEO-1)).toFixed(4)} %.`,BLUE],
+    ['Más allá de Sommerfeld','El cálculo muestra dónde falla la recta y recupera el límite clásico 3/2.',BLUE]];
+  const sv=add(r,'svg',{width:1920,height:1080,class:'abs'});sv.style.left=0;sv.style.top=0;
+  const ck=it.map((_,k)=>add(sv,'path',{d:`M120,${280+k*170}l22,24l44,-52`,stroke:it[k][2],'stroke-width':8,fill:'none','stroke-linecap':'round',opacity:0}));
+  it.forEach(([a,b,c],k)=>$(r,`<span style="color:${c};font-style:italic">${a}:</span> ${b}`,230,232+k*170,{w:1600,cls:'txt fade',step:k,delay:300}));
+  return it.map((_,k)=>A=>{ck[k].setAttribute('opacity',1);stroke(A,ck[k],0,600);});}});
+
+// 16 ─ Cierre
+scene({who:'Sebastián',time:'19:30–20:00',portada:true,build(r){
+  const p=new Plot(r,{x:0,y:620,w:1920,h:460,xr:[0,2],yr:[-.05,1.2],L:0,R:0,T:0,B:0});
+  const c=p.curve([],{color:YELLOW,width:4,op:.5});
+  $(r,'¡Gracias!',0,250,{w:1920,align:'center',size:140,cls:'write',step:0});
+  $(r,'¿Preguntas?',0,450,{w:1920,align:'center',size:60,cls:'fade gr',step:0,delay:900});
+  $(r,'<span class="t">Sebastián Sánchez</span> &nbsp;·&nbsp; <span class="g">Joan Tovar</span> &nbsp;·&nbsp; <span class="b">Jorge Garzón</span><br><span class="small gr">github.com/SolecitoPunk/capacidad_calorifica</span>',
+    0,600,{w:1920,align:'center',size:40,cls:'fade',step:0,delay:1500});
+  return[A=>{c.draw(A,300,2000);A.loop(s=>{const t=.12+.1*Math.sin(s*.6),m=muAt(t);c.set(EG.map(e=>[e,fd(e,t,m)]));});}];}});
+
+/* =====================================================================
+   4. NAVEGACIÓN, HUD, PRESENTADOR
+   ===================================================================== */
+const stage=document.getElementById('stage'),hud=document.getElementById('hud');
+let PW=null,T0=null;
+function header(r,sc,i){if(sc.portada)return;const c=QUIEN[sc.who];
+  $(r,sc.part,92,52,{cls:'part fade',step:0,color:c});
+  $(r,htm(sc.title),90,82,{cls:'ttl write',step:0});}
+function render(i,j,inst){GEN++;const gen=GEN;CUR=i;if(ROOT)ROOT.remove();
+  const r=document.createElement('div');r.className='slide';stage.insertBefore(r,hud);ROOT=r;
+  header(r,SC[i],i);const st=SC[i].build(r)||[];r._st=st;
+  const ds=[...r.querySelectorAll('[data-step]')].map(e=>+e.dataset.step+1);r._tot=Math.max(st.length,1,...ds);
+  if(j<0||j>=r._tot)j=r._tot-1;STEP=j;
+  r.classList.add('noanim');for(let k=0;k<j;k++)apply(r,k,true,gen);
+  if(inst)apply(r,j,true,gen);void r.offsetWidth;r.classList.remove('noanim');void r.offsetWidth;
+  if(!inst)apply(r,j,false,gen);hudUpd();}
+function apply(r,k,inst,gen){r.querySelectorAll(`[data-step="${k}"]`).forEach(e=>e.classList.add('on'));const f=r._st[k];if(f)f(mkA(inst,gen));}
+function next(){if(T0===null)T0=Date.now();if(STEP+1<ROOT._tot){STEP++;apply(ROOT,STEP,false,GEN);hudUpd();}else if(CUR+1<SC.length)render(CUR+1,0);}
+function prev(){if(STEP>0)render(CUR,STEP-1,true);else if(CUR>0)render(CUR-1,-1,true);}
+function go(i){render(Math.max(0,Math.min(SC.length-1,i)),0);}
+function hudUpd(){const c=QUIEN[SC[CUR].who];document.getElementById('num').textContent=`${CUR+1} / ${SC.length}`;
+  const b=document.getElementById('bar');b.style.width=(100*(CUR+(STEP+1)/ROOT._tot)/SC.length)+'%';b.style.background=c;
+  history.replaceState(null,'',`#${CUR+1}.${STEP}`);
+  const n=NOTAS[CUR];document.getElementById('notas').innerHTML=n?`<b>${n.cabecera}</b>`+n.parrafos.map(p=>`<p>${p}</p>`).join(''):'';
+  enviar();}
+function estado(){return{i:CUR,j:STEP,tot:ROOT?ROOT._tot:1,n:SC.length,t0:T0,
+  sc:SC.map(s=>({who:s.who,time:s.time,title:s.title||(s===SC[0]?'Portada':'Cierre')}))};}
+function enviar(){if(PW&&!PW.closed)PW.postMessage({tipo:'estado',e:estado()},'*');}
+function pantalla(){const s=Math.min(innerWidth/1920,innerHeight/1080);stage.style.transform=`translate(-50%,-50%) scale(${s})`;}
+function teclas(e){const k=e.key;
+  if(['ArrowRight',' ','PageDown','Enter'].includes(k)){e.preventDefault();next();}
+  else if(['ArrowLeft','PageUp','Backspace'].includes(k)){e.preventDefault();prev();}
+  else if(k==='Home')go(0);else if(k==='End')go(SC.length-1);
+  else if(k==='f'||k==='F'){if(!document.fullscreenElement)document.documentElement.requestFullscreen();else document.exitFullscreen();}
+  else if(k==='n'||k==='N'){const d=document.getElementById('notas');d.style.display=d.style.display==='block'?'none':'block';}
+  else if(k==='t'||k==='T'){const d=document.getElementById('timer');d.style.display=d.style.display==='block'?'none':'block';}
+  else if(k==='p'||k==='P'){PW=window.open(location.href.split('#')[0].split('?')[0]+'?presentador','presentador','width=1000,height=760');}}
+function principal(){
+  pantalla();addEventListener('resize',pantalla);
+  setTimeout(()=>{const t=performance.now();calc();console.log('física calculada en',(performance.now()-t).toFixed(0),'ms');
+    document.getElementById('carga').remove();
+    const m=location.hash.match(/^#(\d+)(?:\.(\d+))?/);if(m)render(Math.min(SC.length,+m[1])-1,+(m[2]||0),true);else render(0,0);
+    setTimeout(()=>document.getElementById('hint').style.opacity=0,5000);
+    addEventListener('keydown',teclas);
+    stage.addEventListener('click',e=>{if(e.button===0)next();});
+    addEventListener('message',e=>{const d=e.data||{};if(d.cmd==='next')next();else if(d.cmd==='prev')prev();else if(d.cmd==='hola'){PW=e.source;enviar();}});
+    setInterval(()=>{const d=document.getElementById('timer');if(T0)d.textContent=reloj(Date.now()-T0);},500);},50);}
+const reloj=ms=>{const s=Math.floor(ms/1000);return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');};
+const aSeg=x=>{const [m,s]=x.split(':').map(Number);return 60*m+s;};
+function presentador(){
+  document.body.className='pres';
+  const box=document.createElement('div');box.id='pres';document.body.appendChild(box);
+  box.innerHTML=`<div class="top"><div><div class="who" id="q"></div><div class="meta" id="m"></div></div><div style="text-align:right"><div class="clock" id="c">00:00</div><div class="meta" id="obj"></div></div></div>
+    <div style="margin:14px 0"><button id="bp">◀ Anterior</button><button id="bn">Siguiente ▶</button><span class="meta">(o use las flechas en esta ventana)</span></div>
+    <div class="nt" id="nt"></div><hr><div class="meta" id="sig"></div>`;
+  let E=null;const cmd=c=>{if(window.opener)window.opener.postMessage({cmd:c},'*');};
+  document.getElementById('bp').onclick=()=>cmd('prev');document.getElementById('bn').onclick=()=>cmd('next');
+  addEventListener('keydown',e=>{if(['ArrowRight',' ','PageDown'].includes(e.key)){e.preventDefault();cmd('next');}if(['ArrowLeft','PageUp'].includes(e.key)){e.preventDefault();cmd('prev');}});
+  addEventListener('message',e=>{if(e.data&&e.data.tipo==='estado'){E=e.data.e;pinta();}});
+  function pinta(){if(!E)return;const s=E.sc[E.i],n=NOTAS[E.i],col=QUIEN[s.who];
+    document.getElementById('q').innerHTML=`<span style="color:${col}">${s.who}</span> · ${s.title.replace(/_\{([^}]*)\}/g,'$1')}`;
+    document.getElementById('m').textContent=`Diapositiva ${E.i+1}/${E.n} · paso ${E.j+1}/${E.tot} · tiempo previsto ${s.time}`;
+    document.getElementById('nt').innerHTML=n?n.parrafos.map(p=>`<p>${p}</p>`).join(''):'';
+    const z=E.sc[E.i+1];document.getElementById('sig').textContent=z?`Siguiente: ${z.who} · ${z.title.replace(/_\{([^}]*)\}/g,'$1')}`:'Última diapositiva';}
+  setInterval(()=>{if(!E||!E.t0)return;const el=Date.now()-E.t0,s=E.sc[E.i],fin=aSeg(s.time.split('–')[1])*1000;
+    const c=document.getElementById('c');c.textContent=reloj(el);c.style.color=el>fin?'#FC6255':'#83C167';
+    document.getElementById('obj').textContent=el>fin?`atrasados ${reloj(el-fin)}`:`quedan ${reloj(fin-el)} para esta diapositiva`;},500);
+  const hola=()=>{if(window.opener)window.opener.postMessage({cmd:'hola'},'*');};hola();setTimeout(hola,500);}
+if(new URLSearchParams(location.search).has('presentador'))presentador();else principal();
+</script>
+</body>
+</html>
