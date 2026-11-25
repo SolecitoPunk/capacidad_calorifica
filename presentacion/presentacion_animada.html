@@ -546,8 +546,7 @@ const stage=document.getElementById('stage'),hud=document.getElementById('hud');
 let PW=null,T0=null;
 function header(r,sc,i){if(sc.portada)return;const c=QUIEN[sc.who];
   $(r,sc.part,92,52,{cls:'part fade',step:0,color:c});
-  $(r,htm(sc.title),90,82,{cls:'ttl write',step:0});
-  $(r,`${sc.who} · ${sc.time}`,1500,62,{cls:'badge fade',step:0,style:`border-color:${c};color:${c};right:60px;left:auto`});}
+  $(r,htm(sc.title),90,82,{cls:'ttl write',step:0});}
 function render(i,j,inst){GEN++;const gen=GEN;CUR=i;if(ROOT)ROOT.remove();
   const r=document.createElement('div');r.className='slide';stage.insertBefore(r,hud);ROOT=r;
   header(r,SC[i],i);const st=SC[i].build(r)||[];r._st=st;
