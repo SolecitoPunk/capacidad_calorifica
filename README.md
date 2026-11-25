@@ -53,6 +53,11 @@ el script convierte γ a mJ/(mol K²) y lo compara con el valor experimental.
 
 ## Presentación
 
+**Versión animada (recomendada para exponer):** `presentacion/presentacion_animada.html`. Se abre con doble clic
+en Chrome, Edge o Firefox, sin internet ni instalaciones. Las gráficas se dibujan paso a paso y la física
+(Newton, cuadratura adaptativa, C_V y γ) se calcula en vivo en el navegador. Teclas: → / espacio avanzar,
+← retroceder, P ventana del presentador (notas y cronómetro), N notas, F pantalla completa.
+
 `presentacion/presentacion_sommerfeld.pptx`: 16 diapositivas en 16:9, estilo "limones"
 (paleta y fuentes inspiradas en la plantilla Mantis & Lemon: IM Fell English y Arimo, de Google Fonts),
 con ecuaciones editables de PowerPoint y el guion de cada orador en las notas.
